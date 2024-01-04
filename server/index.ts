@@ -1,4 +1,5 @@
 import { OxPlayer } from "player";
+import { OxVehicle } from "vehicle";
 
 const player = new OxPlayer(1);
 new OxPlayer(2);
@@ -13,12 +14,13 @@ expplayer.call("print", "a", "b");
 const player2 = OxPlayer.get(2);
 console.log(player.getUserId(), player2.getUserId())
 
-const expmember = exports.ox.GetPlayer(2);
+const vehicle = new OxVehicle(333);
 const players = OxPlayer.getAll();
 
-member.publicmethod(1, 2);
+console.log(vehicle);
 console.log("players", players);
-expmember.call("publicmethod", "a", "b");
+console.log("vehicles", OxVehicle.getAll());
+console.log(vehicle.getVehicleId())
 
 console.log(player.source)
 console.log(player.userId)
