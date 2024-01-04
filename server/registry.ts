@@ -1,24 +1,42 @@
-export class Registry<T> {
-  name: string;
-  private members: Record<string, T> = {};
+export class Registry {
+  static members: Record<string, any>;
 
-  constructor(name: string) {
-    this.name = name;
+  static init() {
+    this.members = {};
 
-    exports(`Get${name}`, (id: string) => {
+    exports(`Get${this.name}`, (id: string) => {
       return this.get(id);
     });
 
-    exports(`GetAll${name}s`, () => {
-      return this.members;
+    exports(`GetAll${this.name}s`, () => {
+      return this.getAll();
     });
+
+    console.log(`instantiated ${this.name} Registry and created exports`);
   }
 
-  get(id: string) {
+  static add(id: string, instance: any) {
+    if (!this.members) this.init();
+
+    return (this.members[id] = instance);
+  }
+
+  static get(id: string | number) {
     return this.members[id.toString()];
   }
 
-  set(id: string, member: T) {
-    return (this.members[id] = member);
+  static getAll() {
+    return this.members;
+  }
+
+  static remove(id: string | number) {
+    id = id.toString();
+
+    if (this.members[id]) {
+      delete this.members[id];
+      return true;
+    }
+
+    return false;
   }
 }
