@@ -1,42 +1,61 @@
 export class Registry {
-  static members: Record<string, any>;
+  protected static members: Record<string, any>;
+  protected static keys?: Record<string, Record<string, any>>;
+  #instantiated = false;
 
-  static init() {
-    this.members = {};
+  constructor() {
+    if (this.#instantiated) return;
 
-    exports(`Get${this.name}`, (id: string) => {
-      return this.get(id);
+    this.#instantiated = true;
+    const name = this.constructor.name;
+
+    // e.g. exports.ox.getOxPlayer
+    exports(`get${name}`, (id: string) => {
+      return (this as any).constructor.members[id];
     });
 
-    exports(`GetAll${this.name}s`, () => {
-      return this.getAll();
+    // e.g. exports.ox.getOxPlayers
+    exports(`get${name}s`, () => {
+      return (this as any).constructor.members;
     });
 
-    console.log(`instantiated ${this.name} Registry and created exports`);
-  }
-
-  static add(id: string, instance: any) {
-    if (!this.members) this.init();
-
-    return (this.members[id] = instance);
+    console.log(`instantiated Registry<${name}> and created exports`);
   }
 
   static get(id: string | number) {
-    return this.members[id.toString()];
+    return this.members[id];
   }
 
   static getAll() {
     return this.members;
   }
 
-  static remove(id: string | number) {
-    id = id.toString();
+  static add(id: string | number, member: any) {
+    console.log(`instantiated OxPlayer<${member.userId}> and created keys`);
+    this.members[id] = member;
 
-    if (this.members[id]) {
-      delete this.members[id];
-      return true;
+    if (this.keys) {
+      Object.entries(this.keys).forEach(([key, obj]) => {
+        obj[member[key]] = member;
+      });
+    }
+  }
+
+  static remove(id: string | number) {
+    const member = this.members[id];
+
+    if (!member) return false;
+
+    if (this.keys) {
+      Object.entries(this.keys).forEach(([key, obj]) => {
+        if (member[key]) {
+          delete obj[member[key]];
+        }
+      });
     }
 
-    return false;
+    delete this.members[id];
+
+    return true;
   }
 }
