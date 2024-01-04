@@ -30,6 +30,7 @@ for (const context of ["client", "server"]) {
     entryPoints: [`${context}/index.ts`],
     outfile: `dist/${context}.js`,
     format: "esm",
+    keepNames: true,
     plugins: production
       ? undefined
       : [
