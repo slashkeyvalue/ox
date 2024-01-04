@@ -1,5 +1,6 @@
 import { OxPlayer } from "player/class";
 import { OxVehicle } from "vehicle";
+import "player/events";
 
 setTimeout(() => {
     console.log(OxPlayer.getAll())
