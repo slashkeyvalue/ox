@@ -1,65 +1,56 @@
-import { createPool, PoolConfig, Pool, PoolConnection } from "mariadb";
-import { sleep } from "../../common";
+import { createPool, PoolConfig, Pool, PoolConnection } from 'mariadb';
+import { sleep } from '../../common';
+import { MySqlRow, OkPacket } from 'db';
 
 let pool: Pool;
 let isServerConnected = false;
 const connectionConfig: PoolConfig = (() => {
-  const connectionString = GetConvar(
-    "mysql_connection_string",
-    "mysql://root@localhost"
-  ).replace("mysql://", "mariadb://");
+  const connectionString = GetConvar('mysql_connection_string', 'mysql://root@localhost').replace(
+    'mysql://',
+    'mariadb://'
+  );
 
   function parseUri() {
     const splitMatchGroups = connectionString.match(
       new RegExp(
-        "^(?:([^:/?#.]+):)?(?://(?:([^/?#]*)@)?([\\w\\d\\-\\u0100-\\uffff.%]*)(?::([0-9]+))?)?([^?#]+)?(?:\\?([^#]*))?$"
+        '^(?:([^:/?#.]+):)?(?://(?:([^/?#]*)@)?([\\w\\d\\-\\u0100-\\uffff.%]*)(?::([0-9]+))?)?([^?#]+)?(?:\\?([^#]*))?$'
       )
     ) as RegExpMatchArray;
 
-    if (!splitMatchGroups)
-      throw new Error(
-        `mysql_connection_string structure was invalid (${connectionString})`
-      );
+    if (!splitMatchGroups) throw new Error(`mysql_connection_string structure was invalid (${connectionString})`);
 
-    const authTarget = splitMatchGroups[2]
-      ? splitMatchGroups[2].split(":")
-      : [];
+    const authTarget = splitMatchGroups[2] ? splitMatchGroups[2].split(':') : [];
 
     return {
       user: authTarget[0] || undefined,
       password: authTarget[1] || undefined,
       host: splitMatchGroups[3],
       port: parseInt(splitMatchGroups[4]),
-      database: splitMatchGroups[5].replace(/^\/+/, ""),
+      database: splitMatchGroups[5].replace(/^\/+/, ''),
       ...(splitMatchGroups[6] &&
-        splitMatchGroups[6]
-          .split("&")
-          .reduce<Dict<string>>((connectionInfo, parameter) => {
-            const [key, value] = parameter.split("=");
-            connectionInfo[key] = value;
-            return connectionInfo;
-          }, {})),
+        splitMatchGroups[6].split('&').reduce<Dict<string>>((connectionInfo, parameter) => {
+          const [key, value] = parameter.split('=');
+          connectionInfo[key] = value;
+          return connectionInfo;
+        }, {})),
     };
   }
 
-  const options: any = connectionString.includes("mariadb://")
+  const options: any = connectionString.includes('mariadb://')
     ? parseUri()
     : connectionString
-        .replace(
-          /(?:host(?:name)|ip|server|data\s?source|addr(?:ess)?)=/gi,
-          "host="
-        )
-        .replace(/(?:user\s?(?:id|name)?|uid)=/gi, "user=")
-        .replace(/(?:pwd|pass)=/gi, "password=")
-        .replace(/(?:db)=/gi, "database=")
-        .split(";")
+        .replace(/(?:host(?:name)|ip|server|data\s?source|addr(?:ess)?)=/gi, 'host=')
+        .replace(/(?:user\s?(?:id|name)?|uid)=/gi, 'user=')
+        .replace(/(?:pwd|pass)=/gi, 'password=')
+        .replace(/(?:db)=/gi, 'database=')
+        .split(';')
         .reduce((connectionInfo: any, parameter: any) => {
-          const [key, value] = parameter.split("=");
+          const [key, value] = parameter.split('=');
           if (key) connectionInfo[key] = value;
           return connectionInfo;
         }, {});
 
-  if (typeof options.ssl === "string") {
+  if (typeof options.ssl === 'string') {
     try {
       options.ssl = JSON.parse(options.ssl);
     } catch (err) {
@@ -77,9 +68,11 @@ const connectionConfig: PoolConfig = (() => {
   };
 })();
 
-(Symbol as any).dispose ??= Symbol("Symbol.dispose");
-
-interface DbConnection extends PoolConnection {
+export interface DbConnection extends PoolConnection {
+  execute<T extends MySqlRow[]>(query: string, values?: any[]): Promise<T>;
+  execute<T extends OkPacket>(query: string, values?: any[]): Promise<T>;
+  query<T extends MySqlRow[]>(query: string, values?: any[]): Promise<T>;
+  query<T extends OkPacket>(query: string, values?: any[]): Promise<T>;
   [Symbol.dispose](): void;
 }
 
@@ -99,23 +92,21 @@ setTimeout(async () => {
     pool = createPool(connectionConfig);
     isServerConnected = true;
 
-    pool.on("release", () => {
-      console.log("released conn");
+    pool.on('release', () => {
+      console.log('released conn');
     });
 
-    using conn = await getConnection()
+    using conn = await getConnection();
 
-    const result = await conn.query("SELECT VERSION() as version");
+    const result = await conn.query('SELECT VERSION() as version');
 
-    console.log(
-      `${`^5[${result[0].version}]`} ^2Database server connection established!^0`
-    );
+    console.log(`${`^5[${result[0].version}]`} ^2Database server connection established!^0`);
   } catch (err) {
     console.log(
       `^3Unable to establish a connection to the database (${err.code})!\n^1Error ${err.errno}: ${err.message}^0`
     );
 
-    if (connectionConfig.password) connectionConfig.password = "******";
+    if (connectionConfig.password) connectionConfig.password = '******';
 
     console.log(connectionConfig);
   }
