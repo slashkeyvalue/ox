@@ -15,11 +15,13 @@ const onRebuild = (context) => {
 const server = {
   platform: "node",
   target: ["node16"],
+  format: "cjs",
 };
 
 const client = {
   platform: "browser",
   target: ["chrome93"],
+  format: "iife",
 };
 
 const buildCmd = production ? esbuild.build : esbuild.context;
@@ -29,7 +31,6 @@ for (const context of ["client", "server"]) {
     bundle: true,
     entryPoints: [`${context}/index.ts`],
     outfile: `dist/${context}.js`,
-    format: "esm",
     keepNames: true,
     plugins: production
       ? undefined

@@ -1,6 +1,6 @@
 import { OxPlayer } from "player/class";
 
-const connectingPlayers: Record<string, OxPlayer> = {};
+const connectingPlayers: Dict<OxPlayer> = {};
 
 async function loadPlayer(playerId: number) {
   const player = new OxPlayer(playerId);
@@ -35,7 +35,7 @@ on("onResourceStop", (resource: string) => {
 
 setTimeout(() => {
   getPlayers().forEach(async (value) => {
-    console.log(value)
+    console.log(value);
     const player = await loadPlayer(parseInt(value));
     player.setAsJoined();
   });

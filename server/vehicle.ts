@@ -15,7 +15,7 @@ export class OxVehicle extends Registry {
     return this.members[id.toString()];
   }
 
-  static getAll(): Record<string, OxVehicle> {
+  static getAll(): Dict<OxVehicle> {
     return this.members;
   }
 

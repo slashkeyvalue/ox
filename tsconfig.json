@@ -12,6 +12,5 @@
     "allowUnusedLabels": false,
     "noImplicitReturns": true,
     "strictFunctionTypes": true,
-    "types": ["@types/node"]
-  },
+  }
 }

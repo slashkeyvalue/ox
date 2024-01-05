@@ -1,6 +1,6 @@
 export class Registry {
-  protected static members: Record<string, any>;
-  protected static keys?: Record<string, Record<string, any>>;
+  protected static members: Dict<any>;
+  protected static keys?: Dict<Dict<any>>;
 
   static init() {
     const name = this.name;

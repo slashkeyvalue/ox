@@ -15,8 +15,8 @@ export class OxPlayer extends Registry {
   username: string;
   identifier: string;
 
-  protected static members: Record<string, OxPlayer> = {};
-  protected static keys: Record<string, Record<string, OxPlayer>> = {
+  protected static members: Dict<OxPlayer> = {};
+  protected static keys: Dict<Dict<OxPlayer>> = {
     userId: {},
     charId: {},
   };
@@ -80,7 +80,7 @@ export class OxPlayer extends Registry {
     return this.keys.userId[id];
   }
 
-  static getAll(): Record<string, OxPlayer> {
+  static getAll(): Dict<OxPlayer> {
     return this.members;
   }
 
