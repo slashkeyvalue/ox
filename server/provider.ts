@@ -1,8 +1,13 @@
-export class Registry {
+export class ClassProvider {
   protected static members: Dict<any>;
   protected static keys?: Dict<Dict<any>>;
+  protected static callableMethods: Dict<true> = {};
 
-  static init() {
+  static init(callables?: string[]) {
+    callables?.forEach((method) => {
+      this.callableMethods[method] = true;
+    });
+
     const name = this.name;
 
     // e.g. exports.ox.getOxPlayer
@@ -15,7 +20,31 @@ export class Registry {
       return this.members;
     });
 
+    exports(`get${name}Calls`, () => {
+      return this.callableMethods;
+    });
+
+    exports(`call${name}`, (id: string | number, method: string, ...args: any[]) => {
+      const member = this.members[id];
+
+      if (!member) return console.error(`cannot call method ${method} on ${name}<${id}> (invalid id)`);
+
+      if (!this.callableMethods[method]) {
+        return console.error(
+          `cannot call method ${method} on ${name}<${id}> (${
+            member[method] ? `method is not exported` : `method does not exist`
+          })`
+        );
+      }
+
+      if (member) {
+        return member[method](...args);
+      }
+    });
+
     console.log(`instantiated Registry<${name}> and created exports`);
+
+    return this;
   }
 
   static get(id: string | number) {

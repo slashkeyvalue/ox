@@ -1,8 +1,3 @@
-import { OxPlayer } from 'player/class';
-import { OxVehicle } from 'vehicle';
-import 'player/events';
+import 'player';
+import 'utils';
 
-// setTimeout(async () => {
-// console.log(OxPlayer.getAll())
-// console.log(exports.ox.getOxPlayers())
-// }, 100);

@@ -1,4 +1,4 @@
-import { MySqlRow, db } from '../db';
+import { db } from '../db';
 
 export async function GetUserIdFromIdentifier(identifier: string, offset?: number) {
   using conn = await db.getConnection();

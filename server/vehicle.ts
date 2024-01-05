@@ -1,6 +1,6 @@
-import { Registry } from 'registry';
+import { ClassProvider } from 'provider';
 
-export class OxVehicle extends Registry {
+export class OxVehicle extends ClassProvider {
   vehicleId: number;
 
   constructor(id: number) {

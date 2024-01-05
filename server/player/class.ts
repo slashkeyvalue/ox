@@ -1,7 +1,7 @@
-import { Registry } from 'registry';
+import { ClassProvider } from 'provider';
 import { GetUserIdFromIdentifier } from './db';
 
-export class OxPlayer extends Registry {
+export class OxPlayer extends ClassProvider {
   source: number | string;
   userId: number;
   charId: number;
