@@ -1,22 +1,18 @@
 export class Registry {
   protected static members: Record<string, any>;
   protected static keys?: Record<string, Record<string, any>>;
-  #instantiated = false;
 
-  constructor() {
-    if (this.#instantiated) return;
-
-    this.#instantiated = true;
-    const name = this.constructor.name;
+  static init() {
+    const name = this.name;
 
     // e.g. exports.ox.getOxPlayer
     exports(`get${name}`, (id: string) => {
-      return (this as any).constructor.members[id];
+      return this.members[id];
     });
 
     // e.g. exports.ox.getOxPlayers
     exports(`get${name}s`, () => {
-      return (this as any).constructor.members;
+      return this.members;
     });
 
     console.log(`instantiated Registry<${name}> and created exports`);

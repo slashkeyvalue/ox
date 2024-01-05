@@ -101,3 +101,5 @@ export class OxPlayer extends Registry {
     return prop;
   };
 }
+
+OxPlayer.init();

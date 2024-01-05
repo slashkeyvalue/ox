@@ -36,3 +36,5 @@ export class OxVehicle extends Registry {
     return prop;
   };
 }
+
+OxVehicle.init();
