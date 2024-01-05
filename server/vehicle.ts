@@ -1,4 +1,4 @@
-import { Registry } from "registry";
+import { Registry } from 'registry';
 
 export class OxVehicle extends Registry {
   vehicleId: number;
@@ -20,7 +20,7 @@ export class OxVehicle extends Registry {
   }
 
   print(...args: any) {
-    console.log("publicmethod", ...args);
+    console.log('publicmethod', ...args);
   }
 
   getVehicleId() {
@@ -31,7 +31,7 @@ export class OxVehicle extends Registry {
   call = (fn: string, ...args: any) => {
     const prop = (this as any)[fn];
 
-    if (typeof prop === "function") return prop(...args);
+    if (typeof prop === 'function') return prop(...args);
 
     return prop;
   };

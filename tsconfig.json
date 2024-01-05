@@ -11,6 +11,6 @@
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "noImplicitReturns": true,
-    "strictFunctionTypes": true,
+    "strictFunctionTypes": true
   }
 }

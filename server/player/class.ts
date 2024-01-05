@@ -1,5 +1,5 @@
-import { Registry } from "registry";
-import { GetUserIdFromIdentifier } from "./db";
+import { Registry } from 'registry';
+import { GetUserIdFromIdentifier } from './db';
 
 export class OxPlayer extends Registry {
   source: number | string;
@@ -22,16 +22,14 @@ export class OxPlayer extends Registry {
 
   async loadPlayerData() {
     const primaryIdentifier =
-      GetPlayerIdentifierByType(this.source as string, "license2") ||
-      "license2:611c0a85f0fc5292eb0fdd1d38bedd7c140c398e";
+      GetPlayerIdentifierByType(this.source as string, 'license2') ||
+      'license2:611c0a85f0fc5292eb0fdd1d38bedd7c140c398e';
 
     if (!primaryIdentifier) {
       console.error(`unable to determine 'license2' identifier.`);
     }
 
-    const identifier = primaryIdentifier.substring(
-      primaryIdentifier.indexOf(":") + 1
-    );
+    const identifier = primaryIdentifier.substring(primaryIdentifier.indexOf(':') + 1);
 
     let userId = await GetUserIdFromIdentifier(identifier);
 
@@ -40,7 +38,7 @@ export class OxPlayer extends Registry {
         throw new Error(`userId '${userId}' is already active.`);
       }
 
-      console.log("Second login for", userId);
+      console.log('Second login for', userId);
 
       userId = await GetUserIdFromIdentifier(identifier, 1);
 
@@ -50,7 +48,7 @@ export class OxPlayer extends Registry {
     }
 
     if (!userId) {
-      console.log("Register a new user account", identifier);
+      console.log('Register a new user account', identifier);
       userId = (userId as number) + 68;
     }
 
@@ -63,7 +61,7 @@ export class OxPlayer extends Registry {
     if (playerId) this.source = playerId;
 
     OxPlayer.add(this.source, this);
-    Player(this.source).state.set("userId", this.userId, true);
+    Player(this.source).state.set('userId', this.userId, true);
 
     this.print(this);
   }
@@ -92,7 +90,7 @@ export class OxPlayer extends Registry {
   call = (fn: string, ...args: any) => {
     const prop = (this as any)[fn];
 
-    if (typeof prop === "function") return prop(...args);
+    if (typeof prop === 'function') return prop(...args);
 
     return prop;
   };
