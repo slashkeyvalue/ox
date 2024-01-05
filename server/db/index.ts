@@ -2,7 +2,7 @@ import { getConnection } from './pool';
 
 (Symbol as any).dispose ??= Symbol('Symbol.dispose');
 
-export interface MySqlRow<T = any> {
+export interface MySqlRow<T = string | number | boolean | bigint | void> {
   [column: string]: T;
 }
 
