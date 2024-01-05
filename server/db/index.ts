@@ -40,7 +40,7 @@ export async function DbQuery<T>(
   query: string,
   values?: QueryValues
 ): Promise<T> {
-  const conn = await getConnection();
+  using conn = await getConnection()
 
   return parseResponse(type, await conn.query(query, values));
 }
@@ -68,7 +68,7 @@ export async function DbExecute<T>(
   query: string,
   values?: QueryValues
 ): Promise<T> {
-  const conn = await getConnection();
+  using conn = await getConnection()
 
   return parseResponse(type, await conn.execute(query, values));
 }

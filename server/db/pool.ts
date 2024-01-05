@@ -1,4 +1,4 @@
-import { createPool, PoolConfig, Pool } from "mariadb";
+import { createPool, PoolConfig, Pool, PoolConnection } from "mariadb";
 import { sleep } from "../../common";
 
 let pool: Pool;
@@ -77,16 +77,46 @@ const connectionConfig: PoolConfig = (() => {
   };
 })();
 
-setTimeout(async () => {
-  console.log(connectionConfig);
-  pool = createPool(connectionConfig);
-  isServerConnected = true;
-});
+(Symbol as any).dispose ??= Symbol("Symbol.dispose");
+
+interface DbConnection extends PoolConnection {
+  [Symbol.dispose](): void;
+}
 
 export async function getConnection() {
   while (!isServerConnected) {
     await sleep(0);
   }
 
-  return pool.getConnection();
+  const connection = (await pool.getConnection()) as DbConnection;
+  connection[Symbol.dispose] = connection.release;
+
+  return connection;
 }
+
+setTimeout(async () => {
+  try {
+    pool = createPool(connectionConfig);
+    isServerConnected = true;
+
+    pool.on("release", () => {
+      console.log("released conn");
+    });
+
+    using conn = await getConnection()
+
+    const result = await conn.query("SELECT VERSION() as version");
+
+    console.log(
+      `${`^5[${result[0].version}]`} ^2Database server connection established!^0`
+    );
+  } catch (err) {
+    console.log(
+      `^3Unable to establish a connection to the database (${err.code})!\n^1Error ${err.errno}: ${err.message}^0`
+    );
+
+    if (connectionConfig.password) connectionConfig.password = "******";
+
+    console.log(connectionConfig);
+  }
+});
