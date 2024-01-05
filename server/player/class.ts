@@ -1,11 +1,5 @@
 import { Registry } from "registry";
-
-function getUserIdFromIdentifier(identifier: string, offset?: number) {
-  return exports.oxmysql.scalar_async(
-    `SELECT userId FROM users WHERE license2 = ? LIMIT ?, 1`,
-    [identifier, offset || 0]
-  );
-}
+import { GetUserIdFromIdentifier } from "./db";
 
 export class OxPlayer extends Registry {
   source: number | string;
@@ -39,28 +33,30 @@ export class OxPlayer extends Registry {
       primaryIdentifier.indexOf(":") + 1
     );
 
+    let userId = await GetUserIdFromIdentifier(identifier);
+
+    if (userId && OxPlayer.getFromUserId(userId)) {
+      if (userId) {
+        throw new Error(`userId '${userId}' is already active.`);
+      }
+
+      console.log("Second login for", userId);
+
+      userId = await GetUserIdFromIdentifier(identifier, 1);
+
+      if (userId && OxPlayer.getFromUserId(userId)) {
+        throw new Error(`userId '${userId}' is already active.`);
+      }
+    }
+
+    if (!userId) {
+      console.log("Register a new user account", identifier);
+      userId = (userId as number) + 68;
+    }
+
+    this.userId = userId;
     this.identifier = identifier;
     this.username = GetPlayerName(this.source as string);
-    this.userId = await getUserIdFromIdentifier(identifier);
-
-    if (this.userId && OxPlayer.getFromUserId(this.userId)) {
-      if (this.userId) {
-        throw new Error(`userId '${this.userId}' is already active.`);
-      }
-
-      console.log("Second login for", this.userId);
-
-      this.userId = await getUserIdFromIdentifier(identifier, 1);
-
-      if (this.userId && OxPlayer.getFromUserId(this.userId)) {
-        throw new Error(`userId '${this.userId}' is already active.`);
-      }
-    }
-
-    if (!this.userId) {
-      console.log("Register a new user account", this.identifier);
-      this.userId = (this.userId as number) + 68;
-    }
   }
 
   setAsJoined(playerId?: number) {
