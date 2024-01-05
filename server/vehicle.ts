@@ -1,6 +1,6 @@
-import { ClassProvider } from 'provider';
+import { ClassInterface } from 'classInterface';
 
-export class OxVehicle extends ClassProvider {
+export class OxVehicle extends ClassInterface {
   vehicleId: number;
 
   constructor(id: number) {

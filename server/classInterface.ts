@@ -1,12 +1,16 @@
-export class ClassProvider {
+export class ClassInterface {
   protected static members: Dict<any>;
   protected static keys?: Dict<Dict<any>>;
-  protected static callableMethods: Dict<true> = {};
+  protected static callableMethods?: Dict<true>;
 
   static init(callables?: string[]) {
-    callables?.forEach((method) => {
-      this.callableMethods[method] = true;
-    });
+    if (callables) {
+      this.callableMethods = {};
+
+      callables.forEach((method) => {
+        this.callableMethods[method] = true;
+      });
+    }
 
     const name = this.name;
 
@@ -20,26 +24,24 @@ export class ClassProvider {
       return this.members;
     });
 
+    // e.g. exports.ox.getOxPlayerCalls
     exports(`get${name}Calls`, () => {
       return this.callableMethods;
     });
 
+    // e.g. exports.ox.callOxPlayer
     exports(`call${name}`, (id: string | number, method: string, ...args: any[]) => {
       const member = this.members[id];
 
-      if (!member) return console.error(`cannot call method ${method} on ${name}<${id}> (invalid id)`);
+      if (!member) return console.error(`cannot call method ${method} on ${name}<${id}> (invalid player)`);
 
-      if (!this.callableMethods[method]) {
-        return console.error(
-          `cannot call method ${method} on ${name}<${id}> (${
-            member[method] ? `method is not exported` : `method does not exist`
-          })`
-        );
-      }
+      if (!this.callableMethods[method])
+        return console.error(`cannot call method ${method} on ${name}<${id}> (method is not exported)`);
 
-      if (member) {
-        return member[method](...args);
-      }
+      if (!member[method])
+        return console.error(`cannot call method ${method} on ${name}<${id}> (method does not exist)`);
+
+      return member[method](...args);
     });
 
     console.log(`instantiated Registry<${name}> and created exports`);

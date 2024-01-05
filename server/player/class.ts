@@ -1,4 +1,4 @@
-import { ClassProvider } from 'provider';
+import { ClassInterface } from 'classInterface';
 import { GetUserIdFromIdentifier } from './db';
 
 export interface Character {
@@ -16,7 +16,7 @@ export interface Character {
   heading?: number;
 }
 
-export class OxPlayer extends ClassProvider {
+export class OxPlayer extends ClassInterface {
   source: number | string;
   userId: number;
   username: string;
