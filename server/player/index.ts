@@ -1,13 +1,16 @@
 import 'player/events';
+import { GetPlayer } from '../../lib/server';
 
-setTimeout(async () => {
-    const player = exports.ox.getOxPlayer(1);
-  
-    if (!player) return;
-  
-    exports.ox.callOxPlayer(1, 'test', 'hello', 'world');
-    exports.ox.callOxPlayer(1, 'setAsJoined');
-    exports.ox.callOxPlayer(1, 'fakeMethod');
-    exports.ox.callOxPlayer(2, 'test');
-  }, 1000);
-  
+setTimeout(() => {
+  const player = GetPlayer(1);
+
+  if (!player) return;
+
+  console.log(player);
+  player.test('hello world');
+  // player.setAsJoined();
+  // player.fakeMethod();
+
+  const player2 = GetPlayer(2);
+  player2?.test('hello world');
+}, 1000);
