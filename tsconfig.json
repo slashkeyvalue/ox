@@ -10,7 +10,6 @@
     "noEmit": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "noImplicitReturns": true,
     "strictFunctionTypes": true
   }
 }

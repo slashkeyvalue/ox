@@ -1,4 +1,4 @@
-import { createPool, PoolConfig, Pool, PoolConnection } from 'mariadb';
+import { createPool, PoolConfig, Pool, PoolConnection, QueryOptions } from 'mariadb';
 import { sleep } from '../../common';
 import { MySqlRow, OkPacket } from 'db';
 
@@ -69,10 +69,8 @@ const connectionConfig: PoolConfig = (() => {
 })();
 
 export interface DbConnection extends PoolConnection {
-  execute<T extends MySqlRow[]>(query: string, values?: any[]): Promise<T>;
-  execute<T extends OkPacket>(query: string, values?: any[]): Promise<T>;
-  query<T extends MySqlRow[]>(query: string, values?: any[]): Promise<T>;
-  query<T extends OkPacket>(query: string, values?: any[]): Promise<T>;
+  execute<T>(query: string | QueryOptions, values?: any[]): Promise<T>;
+  query<T>(query: string | QueryOptions, values?: any[]): Promise<T>;
   [Symbol.dispose](): void;
 }
 
@@ -98,7 +96,7 @@ setTimeout(async () => {
 
     using conn = await getConnection();
 
-    const result = await conn.query('SELECT VERSION() as version');
+    const result: MySqlRow[] = await conn.query('SELECT VERSION() as version');
 
     console.log(`${`^5[${result[0].version}]`} ^2Database server connection established!^0`);
   } catch (err) {
