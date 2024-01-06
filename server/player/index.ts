@@ -1,1 +1,1 @@
-import 'player/events';
+import 'player/loading';

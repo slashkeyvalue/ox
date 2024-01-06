@@ -1,5 +1,4 @@
 import { ClassInterface } from 'classInterface';
-import { GetUserIdFromIdentifier } from './db';
 
 export interface Character {
   charId: number;
@@ -44,59 +43,11 @@ export class OxPlayer extends ClassInterface {
     return this.members;
   }
 
-  /** Adds a player to the player registry. */
-  static setAsJoined(player: OxPlayer, newId?: number) {
-    if (newId) player.source = newId;
-
-    OxPlayer.add(player.source, player);
-    Player(player.source).state.set('userId', player.userId, true);
-
-    console.log(player);
-  }
-
   constructor(source: number) {
     super();
     this.source = source;
     this.#characters = [];
     this.#character = {} as any;
-  }
-
-  /** Loads existing data for the player, or inserts new data into the database. */
-  async loadPlayerData() {
-    const primaryIdentifier =
-      GetPlayerIdentifierByType(this.source as string, 'license2') ||
-      'license2:611c0a85f0fc5292eb0fdd1d38bedd7c140c398e';
-
-    if (!primaryIdentifier) {
-      console.error(`unable to determine 'license2' identifier.`);
-    }
-
-    const identifier = primaryIdentifier.substring(primaryIdentifier.indexOf(':') + 1);
-
-    let userId = await GetUserIdFromIdentifier(identifier);
-
-    if (userId && OxPlayer.getFromUserId(userId)) {
-      if (userId) {
-        throw new Error(`userId '${userId}' is already active.`);
-      }
-
-      console.log('Second login for', userId);
-
-      userId = await GetUserIdFromIdentifier(identifier, 1);
-
-      if (userId && OxPlayer.getFromUserId(userId)) {
-        throw new Error(`userId '${userId}' is already active.`);
-      }
-    }
-
-    if (!userId) {
-      console.log('Register a new user account', identifier);
-      userId = (userId as number) + 68;
-    }
-
-    this.userId = userId;
-    this.identifier = identifier;
-    this.username = GetPlayerName(this.source as string);
   }
 
   /** Stores a value in the active character's metadata. */
