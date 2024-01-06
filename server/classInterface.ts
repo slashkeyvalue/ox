@@ -60,6 +60,8 @@ export class ClassInterface {
   }
 
   static add(id: string | number, member: any) {
+    if (this.members[id]) return false;
+
     console.log(`instantiated OxPlayer<${member.userId}> and created keys`);
     this.members[id] = member;
 
@@ -68,6 +70,8 @@ export class ClassInterface {
         obj[member[key]] = member;
       });
     }
+
+    return true;
   }
 
   static remove(id: string | number) {
