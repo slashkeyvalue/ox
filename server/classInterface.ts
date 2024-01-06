@@ -3,12 +3,14 @@ export class ClassInterface {
   protected static keys?: Dict<Dict<any>>;
   protected static callableMethods?: Dict<true>;
 
-  static init(callables?: string[]) {
-    if (callables) {
+  static init() {
+    const classMethods = Object.getOwnPropertyNames(this.prototype);
+
+    if (classMethods) {
       this.callableMethods = {};
 
-      callables.forEach((method) => {
-        this.callableMethods[method] = true;
+      classMethods.forEach((method) => {
+        if (method !== 'constructor') this.callableMethods[method] = true;
       });
     }
 
