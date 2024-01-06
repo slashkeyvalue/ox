@@ -21,8 +21,8 @@ export class OxPlayer extends ClassInterface {
   userId: number;
   username: string;
   identifier: string;
-  private character?: Character;
-  private characters?: Partial<Character>[];
+  #character?: Character;
+  #characters?: Partial<Character>[];
 
   protected static members: Dict<OxPlayer> = {};
   protected static keys: Dict<Dict<OxPlayer>> = {
@@ -44,9 +44,21 @@ export class OxPlayer extends ClassInterface {
     return this.members;
   }
 
+  /** Adds a player to the player registry. */
+  static setAsJoined(player: OxPlayer, newId?: number) {
+    if (newId) player.source = newId;
+
+    OxPlayer.add(player.source, player);
+    Player(player.source).state.set('userId', player.userId, true);
+
+    console.log(player);
+  }
+
   constructor(source: number) {
     super();
     this.source = source;
+    this.#characters = [];
+    this.#character = {} as any;
   }
 
   /** Loads existing data for the player, or inserts new data into the database. */
@@ -87,26 +99,49 @@ export class OxPlayer extends ClassInterface {
     this.username = GetPlayerName(this.source as string);
   }
 
-  /** Adds the player to the player registry. */
-  setAsJoined(playerId?: number) {
-    if (playerId) this.source = playerId;
-
-    OxPlayer.add(this.source, this);
-    Player(this.source).state.set('userId', this.userId, true);
-
-    console.log(this);
-  }
-
-  /** Sets temporary metadata for the player. */
+  /** Stores a value in the active character's metadata. */
   set(key: string, value: any, replicated?: boolean) {
-    this.character.metadata[key] = value;
+    this.#character.metadata[key] = value;
 
     if (replicated) emitNet('ox:setPlayerData', this.source, key, value);
   }
 
-  test(...args: any[]) {
+  /** Gets a value stored in active character's metadata. */
+  get(key: string) {
+    return this.#character.metadata[key];
+  }
+
+  getPlayersInScope() {}
+
+  isPlayerInScope(targetId: number) {}
+
+  triggerScopedEvent(eventName: string, ...args: any[]) {}
+
+  setGroup(groupName: string, grade?: number) {}
+
+  getGroup(groupName: string) {}
+
+  getGroups(filter?: string | string[] | Dict<number>) {}
+
+  setStatus() {}
+
+  getStatus(statusName: string) {}
+
+  getStatuses() {}
+
+  addStatus(statusName: string, value: number) {}
+
+  removeStatus(statusName: string, value: number) {}
+
+  addLicense(licenseName: string) {}
+
+  removeLicense(licenseName: string) {}
+
+  logout(dropped: boolean) {}
+
+  #test(...args: any[]) {
     console.log(this.userId, this.username, ...args);
   }
 }
 
-OxPlayer.init(['test']);
+OxPlayer.init();

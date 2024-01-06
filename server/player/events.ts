@@ -16,9 +16,7 @@ on('playerConnecting', async () => {
 });
 
 on('playerJoining', async (tempId: string) => {
-  const playerId = source || 69;
-  const player = connectingPlayers[tempId];
-  player.setAsJoined(playerId);
+  OxPlayer.setAsJoined(connectingPlayers[tempId], source || 69);
 });
 
 on('playerDropped', () => {
@@ -34,9 +32,8 @@ on('onResourceStop', (resource: string) => {
 });
 
 setTimeout(() => {
-  getPlayers().forEach(async (value) => {
-    console.log(value);
-    const player = await loadPlayer(parseInt(value));
-    player.setAsJoined();
+  getPlayers().forEach(async (playerSrc) => {
+    const playerId = parseInt(playerSrc);
+    OxPlayer.setAsJoined(await loadPlayer(playerId), playerId);
   });
 });
