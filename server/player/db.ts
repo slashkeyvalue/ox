@@ -1,3 +1,4 @@
+import { CHARACTER_SLOTS } from '../../common/config';
 import { MySqlRow, OkPacket, db } from '../db';
 import { Character } from './class';
 
@@ -49,8 +50,8 @@ export async function CreateCharacter(
 export async function GetCharacters(userId: number) {
   using conn = await db.getConnection();
   return conn.execute<Partial<Character>[]>(
-    'SELECT charId, stateId, firstName, lastName, x, y, z, heading, DATE_FORMAT(lastPlayed, "%d/%m/%Y") AS lastPlayed FROM characters WHERE userId = ? AND deleted IS NULL',
-    [userId]
+    'SELECT charId, stateId, firstName, lastName, x, y, z, heading, DATE_FORMAT(lastPlayed, "%d/%m/%Y") AS lastPlayed FROM characters WHERE userId = ? AND deleted IS NULL LIMIT ?',
+    [userId, CHARACTER_SLOTS]
   );
 }
 

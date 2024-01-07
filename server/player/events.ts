@@ -1,5 +1,5 @@
 import { onClientCallback } from '@overextended/ox_lib/server';
-import { NewCharacter, OxPlayer } from './class';
+import { OxPlayer } from './class';
 
 type ScopeEvent = { player: string; for: string };
 
@@ -15,14 +15,13 @@ on('playerLeftScope', (data: ScopeEvent) => {
   if (player) delete player.getPlayersInScope()[data.player];
 });
 
-onClientCallback('ox:setActiveCharacter', async (playerId, data: number | NewCharacter) => {
-  const player = OxPlayer.get(playerId);
+onNet('ox:setActiveCharacter', async (data: number | NewCharacter) => {
+  const player = OxPlayer.get(source);
 
   if (!player) return;
 
-  const character = player.setActiveCharacter(data);
-
-  return [player.source, character];
+  const character = await player.setActiveCharacter(data);
+  emitNet('ox:setActiveCharacter', player.source, character);
 });
 
 onClientCallback('ox:deleteCharacter', async (playerId, charId) => {

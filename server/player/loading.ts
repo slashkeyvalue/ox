@@ -69,10 +69,19 @@ on('playerConnecting', async (username: string, _: any, deferrals: any) => {
 });
 
 on('playerJoining', async (tempId: string) => {
-  const player = connectingPlayers[tempId];
+  connectingPlayers[source] = connectingPlayers[tempId];
   delete connectingPlayers[tempId];
 
   if (serverLockdown) return DropPlayer(source.toString(), serverLockdown);
+});
+
+onNet('ox:playerJoined', async () => {
+  const playerSrc = source;
+  const player = connectingPlayers[playerSrc] || (await loadPlayer(playerSrc));
+  delete connectingPlayers[playerSrc];
+
+  if (serverLockdown || typeof player === 'string')
+    return DropPlayer(playerSrc.toString(), serverLockdown || (player as string));
 
   player.setAsJoined();
 });
@@ -93,13 +102,3 @@ RegisterCommand(
   },
   true
 );
-
-setTimeout(() => {
-  getPlayers().forEach(async (playerSrc) => {
-    const player = await loadPlayer(parseInt(playerSrc));
-
-    if (typeof player === 'string') return DropPlayer(playerSrc, player);
-
-    player.setAsJoined();
-  });
-});

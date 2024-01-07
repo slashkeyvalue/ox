@@ -1,6 +1,6 @@
 import { createPool, PoolConfig, Pool, PoolConnection, QueryOptions } from 'mariadb';
-import { sleep } from '../../common';
-import { MySqlRow, OkPacket } from 'db';
+import { Sleep } from '../../common';
+import { MySqlRow } from 'db';
 
 let pool: Pool;
 let isServerConnected = false;
@@ -76,7 +76,7 @@ export interface DbConnection extends PoolConnection {
 
 export async function getConnection() {
   while (!isServerConnected) {
-    await sleep(0);
+    await Sleep(0);
   }
 
   const connection = (await pool.getConnection()) as DbConnection;

@@ -2,27 +2,6 @@ import { ClassInterface } from 'classInterface';
 import { CreateCharacter, DeleteCharacter, GetCharacters, IsStateIdAvailable, SaveCharacterData } from './db';
 import { GetRandomChar, GetRandomInt } from '../../common';
 
-export interface NewCharacter {
-  firstName: string;
-  lastName: string;
-  gender: string;
-  date: number;
-}
-
-export interface Character {
-  charId: number;
-  stateId: string;
-  firstName: string;
-  lastName: string;
-  metadata: Dict<any>;
-  statuses: Dict<number>;
-  licenses: Dict<Dict<any>>;
-  x?: number;
-  y?: number;
-  z?: number;
-  heading?: number;
-}
-
 export class OxPlayer extends ClassInterface {
   source: number | string;
   userId: number;
@@ -57,7 +36,6 @@ export class OxPlayer extends ClassInterface {
     super();
     this.source = source;
     this.#characters = [];
-    this.#character = {};
     this.#inScope = {};
   }
 
@@ -111,7 +89,7 @@ export class OxPlayer extends ClassInterface {
 
   removeLicense(licenseName: string) {}
 
-  #getSaveData(date?: string) {
+  #getSaveData() {
     const coords = GetEntityCoords(this.ped);
 
     return [
@@ -127,7 +105,7 @@ export class OxPlayer extends ClassInterface {
     ];
   }
 
-  static saveAll(kickWithReason: string = '') {
+  static saveAll(kickWithReason?: string) {
     const parameters = [];
 
     for (const id in this.members) {
@@ -135,10 +113,9 @@ export class OxPlayer extends ClassInterface {
 
       if (player.#character) {
         parameters.push(player.#getSaveData());
-        player.#character = null;
       }
 
-      DropPlayer(player.source as string, kickWithReason);
+      if (kickWithReason) DropPlayer(player.source as string, kickWithReason);
     }
 
     SaveCharacterData(parameters, true);
@@ -152,17 +129,14 @@ export class OxPlayer extends ClassInterface {
   async setAsJoined() {
     if (!OxPlayer.add(this.source, this)) return;
 
-    console.log(this);
     Player(this.source).state.set('userId', this.userId, true);
-    await this.#getCharacters();
-
-    this.ped = GetPlayerPed(this.source as string);
-    this.setActiveCharacter(0);
+    console.log('setAsJoined', this);
+    emitNet('ox:startCharacterSelect', this.source, await this.#getCharacters());
   }
 
   async #getCharacters() {
     this.#characters = await GetCharacters(this.userId);
-    emit('ox:characterSelection', this.#characters.length);
+    return this.#characters;
   }
 
   async logout(dropped: boolean) {
@@ -216,18 +190,29 @@ export class OxPlayer extends ClassInterface {
     return this.#characters.length - 1;
   }
 
+  #getCharacterSlotFromId(charId: number) {
+    return this.#characters.findIndex((character) => {
+      return character.charId === charId;
+    });
+  }
+
   async setActiveCharacter(data: number | NewCharacter) {
     if (this.#character) return;
 
-    const character = this.#characters[typeof data === 'object' ? await this.createCharacter(data) : data];
+    const character =
+      this.#characters[
+        typeof data === 'object' ? await this.createCharacter(data) : this.#getCharacterSlotFromId(data)
+      ];
     this.#character = character;
     this.#characters = null;
+    this.ped = GetPlayerPed(this.source as string);
 
     // setup groups
     // setup licenses
     // setup accounts
     // setup metadata
 
+    console.log('setActiveCharacter', character);
     emit('ox:playerLoaded', this.source, this.userId, character.charId);
 
     return this.#character;
@@ -236,9 +221,7 @@ export class OxPlayer extends ClassInterface {
   async deleteCharacter(charId: number) {
     if (this.getCharId()) return;
 
-    const slot = this.#characters.findIndex((character) => {
-      return character.charId === charId;
-    });
+    const slot = this.#getCharacterSlotFromId(charId);
 
     if (slot < 0) return;
 
