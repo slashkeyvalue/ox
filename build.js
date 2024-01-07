@@ -1,29 +1,20 @@
 import esbuild from 'esbuild';
 
-const production = process.argv.includes('--mode=production');
-
-const onRebuild = (context) => {
-  return async (err, res) => {
-    if (err) {
-      return console.error(`[${context}]: Rebuild failed`, err);
-    }
-
-    console.log(`[${context}]: Rebuild succeeded, warnings:`, res.warnings);
-  };
-};
-
+/** @type {import('esbuild').BuildOptions} */
 const server = {
   platform: 'node',
-  target: ['node16'],
+  target: ['esnext'],
   format: 'cjs',
 };
 
+/** @type {import('esbuild').BuildOptions} */
 const client = {
   platform: 'browser',
   target: ['chrome93'],
   format: 'iife',
 };
 
+const production = process.argv.includes('--mode=production');
 const buildCmd = production ? esbuild.build : esbuild.context;
 
 for (const context of ['client', 'server']) {

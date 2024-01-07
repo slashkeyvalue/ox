@@ -1,5 +1,4 @@
 export * from '../common';
-
 import { PLATE_FORMAT } from 'config';
 import 'spawn';
 
