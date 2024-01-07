@@ -1,4 +1,4 @@
-import { OkPacket, db } from '../db';
+import { MySqlRow, OkPacket, db } from '../db';
 import { Character } from './class';
 
 export async function GetUserIdFromIdentifier(identifier: string, offset?: number) {
@@ -15,7 +15,32 @@ export async function CreateUser(username: string, identifiers: Dict<string>) {
   using conn = await db.getConnection();
   const resp: OkPacket = await conn.execute(
     'INSERT INTO users (username, license2, steam, fivem, discord) VALUES (?, ?, ?, ?, ?)',
-    [identifiers]
+    [username, identifiers.license2, identifiers.steam, identifiers.fivem, identifiers.discord]
+  );
+
+  return Number(resp.insertId);
+}
+
+export async function IsStateIdAvailable(stateId: string) {
+  using conn = await db.getConnection();
+  const resp: MySqlRow<number>[] = await conn.execute('SELECT 1 FROM characters WHERE stateId = ?', [stateId]);
+
+  return db.scalar(resp) === 1;
+}
+
+export async function CreateCharacter(
+  userId: number,
+  stateId: string,
+  firstName: string,
+  lastName: string,
+  gender: string,
+  date: number,
+  phoneNumber?: number
+) {
+  using conn = await db.getConnection();
+  const resp: OkPacket = await conn.execute(
+    'INSERT INTO characters (userId, stateId, firstName, lastName, gender, dateOfBirth, phoneNumber) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [userId, stateId, firstName, lastName, gender, date, phoneNumber]
   );
 
   return Number(resp.insertId);
@@ -41,4 +66,11 @@ export async function SaveCharacterData(values: any[] | any[][], batch?: boolean
   }
 
   await conn.execute(query, values);
+}
+
+export async function DeleteCharacter(charId: number) {
+  using conn = await db.getConnection();
+  const resp: OkPacket = await conn.execute('UPDATE characters SET deleted = curdate() WHERE charId = ?');
+
+  return resp.affectedRows === 1;
 }

@@ -83,7 +83,7 @@ on('playerDropped', () => {
   if (!player) return;
 
   player.logout(true);
-  OxPlayer.remove(source);
+  OxPlayer.remove(player.source);
 });
 
 RegisterCommand(
