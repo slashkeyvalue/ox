@@ -1,5 +1,13 @@
 import { ClassInterface } from 'classInterface';
-import { GetCharacters, SaveCharacterData } from './db';
+import { CreateCharacter, DeleteCharacter, GetCharacters, IsStateIdAvailable, SaveCharacterData } from './db';
+import { GetRandomChar, GetRandomInt } from '../../common';
+
+export interface NewCharacter {
+  firstName: string;
+  lastName: string;
+  gender: string;
+  date: number;
+}
 
 export interface Character {
   charId: number;
@@ -51,6 +59,10 @@ export class OxPlayer extends ClassInterface {
     this.#characters = [];
     this.#character = {};
     this.#inScope = {};
+  }
+
+  getCharId() {
+    return this.#character.charId;
   }
 
   /** Stores a value in the active character's metadata. */
@@ -166,26 +178,77 @@ export class OxPlayer extends ClassInterface {
     await this.#getCharacters();
   }
 
-  setActiveCharacter(slot: number) {
-    this.#character = this.#characters[slot];
+  async #generateStateId() {
+    const arr = [];
+
+    while (true) {
+      for (let i = 0; i < 2; i++) arr[i] = GetRandomChar();
+      for (let i = 2; i < 6; i++) arr[i] = GetRandomInt();
+
+      const stateId = arr.join('');
+
+      if (await IsStateIdAvailable(stateId)) return stateId;
+    }
+  }
+
+  async createCharacter(data: NewCharacter) {
+    const stateId = await this.#generateStateId();
+    const phoneNumber: number = null;
+
+    const character: Partial<Character> = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      charId: await CreateCharacter(
+        this.userId,
+        stateId,
+        data.firstName,
+        data.lastName,
+        data.gender,
+        data.date,
+        phoneNumber
+      ),
+      stateId: stateId,
+    };
+
+    this.#characters.push(character);
+    emit('ox:createdCharacter', this.source, this.userId, character.charId);
+
+    return this.#characters.length - 1;
+  }
+
+  async setActiveCharacter(data: number | NewCharacter) {
+    if (this.#character) return;
+
+    const character = this.#characters[typeof data === 'object' ? await this.createCharacter(data) : data];
+    this.#character = character;
     this.#characters = null;
 
-    console.log(this.#character);
-    emit('ox:selectedCharacter', this.source, this.userId, this.#character.charId);
+    // setup groups
+    // setup licenses
+    // setup accounts
+    // setup metadata
+
+    emit('ox:playerLoaded', this.source, this.userId, character.charId);
+
+    return this.#character;
+  }
+
+  async deleteCharacter(charId: number) {
+    if (this.getCharId()) return;
+
+    const slot = this.#characters.findIndex((character) => {
+      return character.charId === charId;
+    });
+
+    if (slot < 0) return;
+
+    if (await DeleteCharacter(charId)) {
+      this.#characters.splice(slot, 1);
+      emit('ox:deletedCharacter', this.source, this.userId, charId);
+      return true;
+    }
   }
 }
-
-on('ox:selectedCharacter', (...args: any[]) => {
-  console.log('ox:selectedCharacter', ...args);
-});
-
-on('ox:characterSelection', (...args: any[]) => {
-  console.log('ox:characterSelection', ...args);
-});
-
-on('ox:playerLogout', (...args: any[]) => {
-  console.log('ox:playerLogout', ...args);
-});
 
 OxPlayer.init();
 
