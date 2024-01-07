@@ -1,6 +1,6 @@
+import { Sleep } from '../../common';
 import { CHARACTER_SLOTS } from '../../common/config';
 import { MySqlRow, OkPacket, db } from '../db';
-import { Character } from './class';
 
 export async function GetUserIdFromIdentifier(identifier: string, offset?: number) {
   using conn = await db.getConnection();
@@ -26,7 +26,7 @@ export async function IsStateIdAvailable(stateId: string) {
   using conn = await db.getConnection();
   const resp: MySqlRow<number>[] = await conn.execute('SELECT 1 FROM characters WHERE stateId = ?', [stateId]);
 
-  return db.scalar(resp) === 1;
+  return !db.scalar(resp);
 }
 
 export async function CreateCharacter(
@@ -40,8 +40,8 @@ export async function CreateCharacter(
 ) {
   using conn = await db.getConnection();
   const resp: OkPacket = await conn.execute(
-    'INSERT INTO characters (userId, stateId, firstName, lastName, gender, dateOfBirth, phoneNumber) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [userId, stateId, firstName, lastName, gender, date, phoneNumber]
+    'INSERT INTO characters (userId, stateId, firstName, lastName, gender, dateOfBirth, phoneNumber) VALUES (?, ?, ?, ?, ?, FROM_UNIXTIME(?), ?)',
+    [userId, stateId, firstName, lastName, gender, date / 1000, phoneNumber]
   );
 
   return Number(resp.insertId);
@@ -71,7 +71,7 @@ export async function SaveCharacterData(values: any[] | any[][], batch?: boolean
 
 export async function DeleteCharacter(charId: number) {
   using conn = await db.getConnection();
-  const resp: OkPacket = await conn.execute('UPDATE characters SET deleted = curdate() WHERE charId = ?');
+  const resp: OkPacket = await conn.execute('UPDATE characters SET deleted = curdate() WHERE charId = ?', [charId]);
 
   return resp.affectedRows === 1;
 }

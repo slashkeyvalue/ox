@@ -88,7 +88,7 @@ async function StartCharacterSelect() {
 
 async function SpawnPlayer(x: number, y: number, z: number, heading: number, playerPed: number) {
   DoScreenFadeOut(200);
-  
+
   while (!IsScreenFadedOut()) await Sleep(0);
 
   SwitchOutPlayer(PlayerPedId(), 0, 1);
@@ -98,27 +98,21 @@ async function SpawnPlayer(x: number, y: number, z: number, heading: number, pla
   SetEntityCoordsNoOffset(playerPed, x, y, z, false, false, false);
   SetEntityHeading(playerPed, heading);
   FreezeEntityPosition(playerPed, true);
-  SetGameplayCamRelativeHeading(0);
 
   while (GetPlayerSwitchState() !== 5) await Sleep(0);
 
   SwitchInPlayer(playerPed);
 
   while (GetPlayerSwitchState() !== 12) await Sleep(0);
+
+  SetGameplayCamRelativeHeading(0);
+
   while (!HasCollisionLoadedAroundEntity(playerPed)) await Sleep(0);
 
-  FreezeEntityPosition(playerPed, false)
+  FreezeEntityPosition(playerPed, false);
 }
 
-onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
-  if (playerIsLoaded) {
-    playerIsLoaded = false;
-    playerIsHidden = true;
-  }
-
-  StartCharacterSelect();
-  await Sleep(300);
-
+function CreateCharacterMenu(characters: Partial<Character>[]) {
   const options: object[] = new Array(characters.length);
 
   characters.forEach((character, index) => {
@@ -137,8 +131,102 @@ onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
     options.push({
       title: `Empty slot`,
       description: `Create a new character`,
+      onSelect: async (index: number) => {
+        const input = await exports.ox_lib.inputDialog('Create a character', [
+          {
+            type: 'input',
+            required: true,
+            icon: 'user-pen',
+            label: 'First name',
+            placeholder: 'John',
+          },
+          {
+            type: 'input',
+            required: true,
+            icon: 'user-pen',
+            label: 'Last name',
+            placeholder: 'Smith',
+          },
+          {
+            type: 'select',
+            required: true,
+            icon: 'circle-user',
+            label: 'Gender',
+            options: [
+              {
+                label: 'Male',
+                value: 'male',
+              },
+              {
+                label: 'Female',
+                value: 'female',
+              },
+              {
+                label: 'Non-Binary',
+                value: 'non_binary',
+              },
+            ],
+          },
+          {
+            type: 'date',
+            required: true,
+            icon: 'calendar-days',
+            label: 'Date of birth',
+            format: 'YYYY-MM-DD',
+            min: '1900-01-01',
+            max: '2006-01-01',
+            default: '2006-01-01',
+          },
+        ]);
+
+        if (!input) return exports.ox_lib.showContext('ox:characterSelect');
+
+        const character: NewCharacter = {
+          firstName: input[0],
+          lastName: input[1],
+          gender: input[2],
+          date: input[3],
+        };
+
+        emitNet('ox:setActiveCharacter', character);
+      },
+      args: characters.length,
     });
   }
+
+  options.push({
+    title: `Delete a character`,
+    onSelect: async () => {
+      const input = await exports.ox_lib.inputDialog('Delete a character', [
+        {
+          type: 'select',
+          label: 'Select a character',
+          required: true,
+          options: characters.map((character, index) => {
+            return { label: `${character.firstName} ${character.lastName}`, value: index };
+          }),
+        },
+      ]);
+
+      if (!input) return exports.ox_lib.showContext('ox:characterSelect');
+
+      const character = characters[input[0]];
+      const deleteChar = await exports.ox_lib.alertDialog({
+        header: 'Delete character',
+        content: `Are you sure you want to delete ${character.firstName} ${character.lastName}?  \nThis action is irreversible.`,
+        cancel: true,
+      });
+
+      if (deleteChar === 'confirm') {
+        emitNet('ox:deleteCharacter', character.charId);
+        characters.splice(input[0], 1);
+
+        return CreateCharacterMenu(characters);
+      }
+
+      exports.ox_lib.showContext('ox:characterSelect');
+    },
+  });
 
   exports.ox_lib.registerContext({
     id: 'ox:characterSelect',
@@ -148,15 +236,27 @@ onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
   });
 
   exports.ox_lib.showContext('ox:characterSelect');
+}
+
+onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
+  if (playerIsLoaded) {
+    playerIsLoaded = false;
+    playerIsHidden = true;
+  }
+
+  StartCharacterSelect();
+  await Sleep(300);
+  CreateCharacterMenu(characters);
 
   // exports.ox_lib.inputDialog('Character Selection', [
-  //   'hello'
+  //   {
+  //     type: 'select',
+  //     options: [ 'test', 'b']
+  //   }
   // ])
 });
 
 onNet('ox:setActiveCharacter', async (data: Partial<Character>) => {
-  console.log(data);
-
   const playerPed = PlayerPedId();
 
   SetEntityHealth(playerPed, GetEntityMaxHealth(playerPed));
@@ -172,7 +272,7 @@ onNet('ox:setActiveCharacter', async (data: Partial<Character>) => {
   playerIsLoaded = true;
   playerIsHidden = false;
 
-  TriggerEvent('playerSpawned')
+  TriggerEvent('playerSpawned');
   TriggerEvent('ox:playerLoaded', {} /** todo */);
 
   // run status system

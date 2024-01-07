@@ -40,7 +40,7 @@ export class OxPlayer extends ClassInterface {
   }
 
   getCharId() {
-    return this.#character.charId;
+    return this.#character?.charId;
   }
 
   /** Stores a value in the active character's metadata. */
@@ -115,7 +115,10 @@ export class OxPlayer extends ClassInterface {
         parameters.push(player.#getSaveData());
       }
 
-      if (kickWithReason) DropPlayer(player.source as string, kickWithReason);
+      if (kickWithReason) {
+        player.#character = null;
+        DropPlayer(player.source as string, kickWithReason);
+      }
     }
 
     SaveCharacterData(parameters, true);
@@ -130,7 +133,6 @@ export class OxPlayer extends ClassInterface {
     if (!OxPlayer.add(this.source, this)) return;
 
     Player(this.source).state.set('userId', this.userId, true);
-    console.log('setAsJoined', this);
     emitNet('ox:startCharacterSelect', this.source, await this.#getCharacters());
   }
 
@@ -149,7 +151,7 @@ export class OxPlayer extends ClassInterface {
 
     this.#character = null;
 
-    await this.#getCharacters();
+    emitNet('ox:startCharacterSelect', this.source, await this.#getCharacters());
   }
 
   async #generateStateId() {
@@ -203,6 +205,7 @@ export class OxPlayer extends ClassInterface {
       this.#characters[
         typeof data === 'object' ? await this.createCharacter(data) : this.#getCharacterSlotFromId(data)
       ];
+
     this.#character = character;
     this.#characters = null;
     this.ped = GetPlayerPed(this.source as string);

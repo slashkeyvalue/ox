@@ -23,8 +23,6 @@ async function loadPlayer(playerId: number) {
       return `userId '${userId}' is already active.`;
     }
 
-    console.log('Second login for', userId);
-
     userId = await GetUserIdFromIdentifier(identifier, 1);
 
     if (userId && OxPlayer.getFromUserId(userId)) {
