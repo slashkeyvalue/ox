@@ -90,9 +90,9 @@ setTimeout(async () => {
     pool = createPool(connectionConfig);
     isServerConnected = true;
 
-    pool.on('release', () => {
-      console.log('released conn');
-    });
+    // pool.on('release', () => {
+    //   console.log('released conn');
+    // });
 
     using conn = await getConnection();
 
