@@ -1,6 +1,6 @@
 import { CHARACTER_SLOTS, DEFAULT_SPAWN } from 'config';
 import { Sleep } from '../common';
-import { triggerServerCallback } from '@overextended/ox_lib/client';
+import { alertDialog, inputDialog, registerContext, showContext, triggerServerCallback } from '@overextended/ox_lib/client';
 
 const playerId = PlayerId();
 
@@ -115,7 +115,8 @@ async function SpawnPlayer(x: number, y: number, z: number, heading: number, pla
 }
 
 function CreateCharacterMenu(characters: Partial<Character>[]) {
-  const options: object[] = new Array(characters.length);
+  //todo: export ContextMenuArrayItem and such from ox_lib
+  const options: any[] = new Array(characters.length);
 
   characters.forEach((character, index) => {
     const coords = character.x ? [character.x, character.y, character.z] : DEFAULT_SPAWN;
@@ -133,87 +134,96 @@ function CreateCharacterMenu(characters: Partial<Character>[]) {
     options.push({
       title: `Empty slot`,
       description: `Create a new character`,
-      onSelect: async (index: number) => {
-        const input = await exports.ox_lib.inputDialog('Create a character', [
+      onSelect: async () => {
+        const input = await inputDialog(
+          'Create a character',
+          [
+            {
+              type: 'input',
+              required: true,
+              icon: 'user-pen',
+              label: 'First name',
+              placeholder: 'John',
+            },
+            {
+              type: 'input',
+              required: true,
+              icon: 'user-pen',
+              label: 'Last name',
+              placeholder: 'Smith',
+            },
+            {
+              type: 'select',
+              required: true,
+              icon: 'circle-user',
+              label: 'Gender',
+              options: [
+                {
+                  label: 'Male',
+                  value: 'male',
+                },
+                {
+                  label: 'Female',
+                  value: 'female',
+                },
+                {
+                  label: 'Non-Binary',
+                  value: 'non_binary',
+                },
+              ],
+            },
+            {
+              type: 'date',
+              required: true,
+              icon: 'calendar-days',
+              label: 'Date of birth',
+              format: 'YYYY-MM-DD',
+              min: '1900-01-01',
+              max: '2006-01-01',
+              default: '2006-01-01',
+            },
+          ],
           {
-            type: 'input',
-            required: true,
-            icon: 'user-pen',
-            label: 'First name',
-            placeholder: 'John',
-          },
-          {
-            type: 'input',
-            required: true,
-            icon: 'user-pen',
-            label: 'Last name',
-            placeholder: 'Smith',
-          },
-          {
-            type: 'select',
-            required: true,
-            icon: 'circle-user',
-            label: 'Gender',
-            options: [
-              {
-                label: 'Male',
-                value: 'male',
-              },
-              {
-                label: 'Female',
-                value: 'female',
-              },
-              {
-                label: 'Non-Binary',
-                value: 'non_binary',
-              },
-            ],
-          },
-          {
-            type: 'date',
-            required: true,
-            icon: 'calendar-days',
-            label: 'Date of birth',
-            format: 'YYYY-MM-DD',
-            min: '1900-01-01',
-            max: '2006-01-01',
-            default: '2006-01-01',
-          },
-        ]);
+            allowCancel: false,
+          }
+        );
 
-        if (!input) return exports.ox_lib.showContext('ox:characterSelect');
+        if (!input) return showContext('ox:characterSelect');
 
         const character: NewCharacter = {
-          firstName: input[0],
-          lastName: input[1],
-          gender: input[2],
-          date: input[3],
+          firstName: input[0] as string,
+          lastName: input[1] as string,
+          gender: input[2] as string,
+          date: input[3] as number,
         };
 
         emitNet('ox:setActiveCharacter', character);
       },
-      args: characters.length,
     });
   }
 
   options.push({
     title: `Delete a character`,
     onSelect: async () => {
-      const input = await exports.ox_lib.inputDialog('Delete a character', [
-        {
-          type: 'select',
-          label: 'Select a character',
-          required: true,
-          options: characters.map((character, index) => {
-            return { label: `${character.firstName} ${character.lastName}`, value: index };
-          }),
-        },
-      ]);
+      const input = await inputDialog(
+        'Delete a character',
+        [
+          {
+            type: 'select',
+            label: 'Select a character',
+            required: true,
+            options: characters.map((character, index) => {
+              return { label: `${character.firstName} ${character.lastName}`, value: index.toString() };
+            }),
+          },
+        ],
+        { allowCancel: true }
+      );
 
-      if (!input) return exports.ox_lib.showContext('ox:characterSelect');
+      if (!input) return showContext('ox:characterSelect');
 
-      const character = characters[input[0]];
-      const deleteChar = await exports.ox_lib.alertDialog({
+      const character = characters[input[0] as number];
+      const deleteChar = await alertDialog({
         header: 'Delete character',
         content: `Are you sure you want to delete ${character.firstName} ${character.lastName}?  \nThis action is irreversible.`,
         cancel: true,
@@ -223,24 +233,24 @@ function CreateCharacterMenu(characters: Partial<Character>[]) {
         const success = <boolean>await triggerServerCallback('ox:deleteCharacter', 0, character.charId);
 
         if (success) {
-          characters.splice(input[0], 1);
+          characters.splice(input[0] as number, 1);
           console.log(characters);
           return CreateCharacterMenu(characters);
         }
       }
 
-      exports.ox_lib.showContext('ox:characterSelect');
+      showContext('ox:characterSelect');
     },
   });
 
-  exports.ox_lib.registerContext({
+  registerContext({
     id: 'ox:characterSelect',
     title: 'Character Selection',
     canClose: false,
     options: options,
   });
 
-  exports.ox_lib.showContext('ox:characterSelect');
+  showContext('ox:characterSelect');
 }
 
 onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
@@ -252,13 +262,6 @@ onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
   StartCharacterSelect();
   await Sleep(300);
   CreateCharacterMenu(characters);
-
-  // exports.ox_lib.inputDialog('Character Selection', [
-  //   {
-  //     type: 'select',
-  //     options: [ 'test', 'b']
-  //   }
-  // ])
 });
 
 onNet('ox:setActiveCharacter', async (data: Partial<Character>) => {
