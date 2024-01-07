@@ -1,7 +1,7 @@
 export class ClassInterface {
   protected static members: Dict<any>;
   protected static keys?: Dict<Dict<any>>;
-  protected static callableMethods?: Dict<true>;
+  protected static callableMethods: Dict<true>;
 
   static init() {
     const classMethods = Object.getOwnPropertyNames(this.prototype);
