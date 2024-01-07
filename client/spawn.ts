@@ -1,5 +1,6 @@
 import { CHARACTER_SLOTS, DEFAULT_SPAWN } from 'config';
 import { Sleep } from '../common';
+import { triggerServerCallback } from '@overextended/ox_lib/client';
 
 const playerId = PlayerId();
 
@@ -84,6 +85,7 @@ async function StartCharacterSelect() {
   SetMaxWantedLevel(0);
   NetworkSetFriendlyFireOption(true);
   SetPlayerHealthRechargeMultiplier(playerId, 0.0);
+  SetGameplayCamRelativeHeading(0);
 }
 
 async function SpawnPlayer(x: number, y: number, z: number, heading: number, playerPed: number) {
@@ -218,10 +220,13 @@ function CreateCharacterMenu(characters: Partial<Character>[]) {
       });
 
       if (deleteChar === 'confirm') {
-        emitNet('ox:deleteCharacter', character.charId);
-        characters.splice(input[0], 1);
+        const success = <boolean>await triggerServerCallback('ox:deleteCharacter', 0, character.charId);
 
-        return CreateCharacterMenu(characters);
+        if (success) {
+          characters.splice(input[0], 1);
+          console.log(characters);
+          return CreateCharacterMenu(characters);
+        }
       }
 
       exports.ox_lib.showContext('ox:characterSelect');
@@ -261,13 +266,8 @@ onNet('ox:setActiveCharacter', async (data: Partial<Character>) => {
 
   SetEntityHealth(playerPed, GetEntityMaxHealth(playerPed));
   SetPedArmour(playerPed, 0);
-  await SpawnPlayer(
-    data.x || DEFAULT_SPAWN[0],
-    data.y || DEFAULT_SPAWN[1],
-    data.z || DEFAULT_SPAWN[2],
-    data.heading || DEFAULT_SPAWN[3],
-    playerPed
-  );
+
+  if (data.x) await SpawnPlayer(data.x, data.y, data.z, data.heading, playerPed);
 
   playerIsLoaded = true;
   playerIsHidden = false;

@@ -15,7 +15,6 @@ on('playerLeftScope', (data: ScopeEvent) => {
   if (player) delete player.getPlayersInScope()[data.player];
 });
 
-//todo: callback event
 onNet('ox:setActiveCharacter', async (data: number | NewCharacter) => {
   const player = OxPlayer.get(source);
 
@@ -25,11 +24,10 @@ onNet('ox:setActiveCharacter', async (data: number | NewCharacter) => {
   emitNet('ox:setActiveCharacter', player.source, character);
 });
 
-//todo: callback event
-onNet('ox:deleteCharacter', async (charId: number) => {
-  const player = OxPlayer.get(source);
+onClientCallback('ox:deleteCharacter', async (playerId, charId: number) => {
+  const player = OxPlayer.get(playerId);
 
   if (!player) return;
 
-  player.deleteCharacter(charId);
+  return await player.deleteCharacter(charId);
 });
