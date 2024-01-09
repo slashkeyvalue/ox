@@ -14,14 +14,14 @@ class PlayerInterface {
   }
 }
 
-Object.keys(exports.ox.getOxPlayerCalls() || {}).forEach((method: string) => {
+Object.keys(exports.ox_core.getOxPlayerCalls() || {}).forEach((method: string) => {
   (PlayerInterface.prototype as any)[method] = function (...args: any[]) {
-    return exports.ox.callOxPlayer(this.source, method, ...args);
+    return exports.ox_core.callOxPlayer(this.source, method, ...args);
   };
 });
 
 export function GetPlayer(id: string | number): OxPlayer | void {
-  const player = exports.ox.getOxPlayer(id);
+  const player = exports.ox_core.getOxPlayer(id);
 
   if (!player) return console.error(`cannot create PlayerInterface<${id}> (invalid id)`);
 

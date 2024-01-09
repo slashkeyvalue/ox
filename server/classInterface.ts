@@ -16,22 +16,22 @@ export class ClassInterface {
 
     const name = this.name;
 
-    // e.g. exports.ox.getOxPlayer
+    // e.g. exports.ox_core.getOxPlayer
     exports(`get${name}`, (id: string) => {
       return this.members[id];
     });
 
-    // e.g. exports.ox.getOxPlayers
+    // e.g. exports.ox_core.getOxPlayers
     exports(`get${name}s`, () => {
       return this.members;
     });
 
-    // e.g. exports.ox.getOxPlayerCalls
+    // e.g. exports.ox_core.getOxPlayerCalls
     exports(`get${name}Calls`, () => {
       return this.callableMethods;
     });
 
-    // e.g. exports.ox.callOxPlayer
+    // e.g. exports.ox_core.callOxPlayer
     exports(`call${name}`, (id: string | number, method: string, ...args: any[]) => {
       const member = this.members[id];
 
