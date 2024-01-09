@@ -71,7 +71,7 @@ const connectionConfig: PoolConfig = (() => {
 export interface DbConnection extends PoolConnection {
   execute<T>(query: string | QueryOptions, values?: any[]): Promise<T>;
   query<T>(query: string | QueryOptions, values?: any[]): Promise<T>;
-  // [Symbol.dispose](): void;
+  [Symbol.dispose](): void;
 }
 
 export async function getConnection() {
@@ -79,15 +79,13 @@ export async function getConnection() {
     await Sleep(0);
   }
 
-  const connection: DbConnection = await pool.getConnection();
-  // connection[Symbol.dispose] = connection.release;
+  const connection = (await pool.getConnection()) as DbConnection;
+  connection[Symbol.dispose] = connection.release;
 
   return connection;
 }
 
 setTimeout(async () => {
-  let conn;
-
   try {
     pool = createPool(connectionConfig);
     isServerConnected = true;
@@ -96,8 +94,7 @@ setTimeout(async () => {
     //   console.log('released conn');
     // });
 
-    // using conn = await getConnection();
-    conn = await getConnection();
+    using conn = await getConnection();
     const result: MySqlRow[] = await conn.query('SELECT VERSION() as version');
 
     console.log(`${`^5[${result[0].version}]`} ^2Database server connection established!^0`);
@@ -109,7 +106,5 @@ setTimeout(async () => {
     if (connectionConfig.password) connectionConfig.password = '******';
 
     console.log(connectionConfig);
-  } finally {
-    conn.release();
   }
 });

@@ -1,6 +1,6 @@
 import { getConnection } from './pool';
 
-// (Symbol as any).dispose ??= Symbol('Symbol.dispose');
+(Symbol as any).dispose ??= Symbol('Symbol.dispose');
 
 export interface MySqlRow<T = string | number | boolean | bigint | Dict<any> | void> {
   [column: string]: T;
