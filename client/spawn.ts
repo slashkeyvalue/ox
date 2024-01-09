@@ -1,6 +1,12 @@
 import { CHARACTER_SLOTS, DEFAULT_SPAWN } from 'config';
 import { Sleep } from '../common';
-import { alertDialog, inputDialog, registerContext, showContext, triggerServerCallback } from '@overextended/ox_lib/client';
+import {
+  alertDialog,
+  inputDialog,
+  registerContext,
+  showContext,
+  triggerServerCallback,
+} from '@overextended/ox_lib/client';
 
 const playerId = PlayerId();
 
@@ -15,9 +21,9 @@ async function StartSession() {
   if (GetIsLoadingScreenActive()) {
     SendLoadingScreenMessage('{"fullyLoaded": true}');
     ShutdownLoadingScreenNui();
+    ShutdownLoadingScreen();
   }
 
-  ShutdownLoadingScreen();
   SetPlayerControl(playerId, false, 0);
   SetPlayerInvincible(playerId, true);
 }
@@ -73,7 +79,7 @@ async function StartCharacterSelect() {
     ThefeedHideThisFrame();
     HideHudAndRadarThisFrame();
 
-    // if (playerIsHidden) SetLocalPlayerInvisibleLocally(true);
+    if (playerIsHidden) SetLocalPlayerInvisibleLocally(true);
 
     await Sleep(0);
   }
@@ -234,7 +240,6 @@ function CreateCharacterMenu(characters: Partial<Character>[]) {
 
         if (success) {
           characters.splice(input[0] as number, 1);
-          console.log(characters);
           return CreateCharacterMenu(characters);
         }
       }
@@ -255,6 +260,7 @@ function CreateCharacterMenu(characters: Partial<Character>[]) {
 
 onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
   if (playerIsLoaded) {
+    DEV: console.info('Character is already loaded - resetting data');
     playerIsLoaded = false;
     playerIsHidden = true;
   }
@@ -275,6 +281,7 @@ onNet('ox:setActiveCharacter', async (data: Partial<Character>) => {
   playerIsLoaded = true;
   playerIsHidden = false;
 
+  DEV: console.info(`Loaded as ${data.firstName} ${data.lastName}`);
   TriggerEvent('playerSpawned');
   TriggerEvent('ox:playerLoaded', {} /** todo */);
 

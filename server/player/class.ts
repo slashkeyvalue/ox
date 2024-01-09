@@ -216,7 +216,10 @@ export class OxPlayer extends ClassInterface {
     // setup accounts
     // setup metadata
 
-    console.log('setActiveCharacter', character);
+    DEV: console.info(
+      `OxPlayer<${this.userId}> loaded character ${this.#character.firstName} ${this.#character.lastName} (${this.#character.charId})`
+    );
+
     emit('ox:playerLoaded', this.source, this.userId, character.charId);
 
     return this.#character;
@@ -232,6 +235,10 @@ export class OxPlayer extends ClassInterface {
     if (await DeleteCharacter(charId)) {
       this.#characters.splice(slot, 1);
       emit('ox:deletedCharacter', this.source, this.userId, charId);
+
+      DEV: console.info(
+        `deleteCharacter ${this.#character.firstName} ${this.#character.lastName} for OxPlayer<${this.userId}>`
+      );
       return true;
     }
   }

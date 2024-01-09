@@ -46,7 +46,7 @@ export class ClassInterface {
       return member[method](...args);
     });
 
-    console.log(`instantiated Registry<${name}> and created exports`);
+    DEV: console.info(`Instantiated ClassInterface<${name}> and exports`);
 
     return this;
   }
@@ -62,7 +62,6 @@ export class ClassInterface {
   static add(id: string | number, member: any) {
     if (this.members[id]) return false;
 
-    console.log(`instantiated OxPlayer<${member.userId}> and created keys`);
     this.members[id] = member;
 
     if (this.keys) {

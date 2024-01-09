@@ -34,6 +34,8 @@ async function loadPlayer(playerId: number) {
   player.userId = userId ? Number(userId) : await CreateUser(player.username, GetIdentifiers(playerId));
   player.identifier = identifier;
 
+  DEV: console.info(`Loaded player data for OxPlayer<${player.userId}>`);
+
   return player;
 }
 
@@ -70,6 +72,8 @@ on('playerJoining', async (tempId: string) => {
   connectingPlayers[source] = connectingPlayers[tempId];
   delete connectingPlayers[tempId];
 
+  DEV: console.info(`assigned id ${source} to OxPlayer<${connectingPlayers[source].userId}>`);
+
   if (serverLockdown) return DropPlayer(source.toString(), serverLockdown);
 });
 
@@ -81,6 +85,8 @@ onNet('ox:playerJoined', async () => {
   if (serverLockdown || typeof player === 'string')
     return DropPlayer(playerSrc.toString(), serverLockdown || (player as string));
 
+  DEV: console.info(`Starting character selection for OxPlayer<${player.userId}>`);
+
   player.setAsJoined(playerSrc);
 });
 
@@ -91,6 +97,8 @@ on('playerDropped', () => {
 
   player.logout(true);
   OxPlayer.remove(player.source);
+
+  DEV: console.info(`Dropped OxPlayer<${player.userId}>`);
 });
 
 RegisterCommand(
