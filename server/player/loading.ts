@@ -81,7 +81,7 @@ onNet('ox:playerJoined', async () => {
   if (serverLockdown || typeof player === 'string')
     return DropPlayer(playerSrc.toString(), serverLockdown || (player as string));
 
-  player.setAsJoined();
+  player.setAsJoined(playerSrc);
 });
 
 on('playerDropped', () => {

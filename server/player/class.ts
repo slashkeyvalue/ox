@@ -129,7 +129,8 @@ export class OxPlayer extends ClassInterface {
   }
 
   /** Adds a player to the player registry. */
-  async setAsJoined() {
+  async setAsJoined(newId?: number | string) {
+    if (newId) this.source = Number(newId);
     if (!OxPlayer.add(this.source, this)) return;
 
     Player(this.source).state.set('userId', this.userId, true);
