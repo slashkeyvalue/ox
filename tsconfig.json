@@ -9,10 +9,9 @@
     "esModuleInterop": true,
     "noEmit": true,
     "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
     "strictFunctionTypes": true,
     "moduleResolution": "bundler",
     "noImplicitThis": true,
     "noUnusedLocals": true,
-  }
+  } 
 }

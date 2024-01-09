@@ -3,7 +3,7 @@ import esbuild from 'esbuild';
 /** @type {import('esbuild').BuildOptions} */
 const server = {
   platform: 'node',
-  target: ['esnext'],
+  target: ['node16'],
   format: 'cjs',
 };
 
@@ -23,6 +23,7 @@ for (const context of ['client', 'server']) {
     entryPoints: [`${context}/index.ts`],
     outfile: `dist/${context}.js`,
     keepNames: true,
+    dropLabels: production ? ['DEV'] : undefined,
     plugins: production
       ? undefined
       : [
