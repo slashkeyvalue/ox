@@ -1,6 +1,6 @@
 import { createPool, PoolConfig, Pool, PoolConnection, QueryOptions } from 'mariadb';
 import { Sleep } from '../../common';
-import { MySqlRow } from 'db';
+import { MySqlRow, OkPacket } from 'db';
 
 let pool: Pool;
 let isServerConnected = false;
@@ -69,8 +69,8 @@ const connectionConfig: PoolConfig = (() => {
 })();
 
 export interface DbConnection extends PoolConnection {
-  execute<T>(query: string | QueryOptions, values?: any[]): Promise<T>;
-  query<T>(query: string | QueryOptions, values?: any[]): Promise<T>;
+  execute<T = Object[] & OkPacket>(query: string | QueryOptions, values?: any[]): Promise<T>;
+  query<T = Object[] & OkPacket>(query: string | QueryOptions, values?: any[]): Promise<T>;
   [Symbol.dispose](): void;
 }
 

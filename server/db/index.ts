@@ -17,7 +17,7 @@ export const db = {
   scalar<T>(resp: MySqlRow<T>[]): T | void {
     if (resp[0]) for (const key in resp[0]) return resp[0][key];
   },
-  single<T>(resp: MySqlRow<T>[]): MySqlRow<T> | void {
+  single<T>(resp: T[]): T | void {
     return resp[0];
   },
 };
