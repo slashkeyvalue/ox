@@ -1,16 +1,26 @@
 import { ClassInterface } from 'classInterface';
-import { CreateCharacter, DeleteCharacter, GetCharacters, IsStateIdAvailable, SaveCharacterData } from './db';
+import {
+  CreateCharacter,
+  DeleteCharacter,
+  GetCharacterMetadata,
+  GetCharacters,
+  IsStateIdAvailable,
+  SaveCharacterData,
+} from './db';
 import { GetRandomChar, GetRandomInt } from '../../common';
 
 export class OxPlayer extends ClassInterface {
   source: number | string;
   userId: number;
+  charId?: number;
+  stateId?: string;
   username: string;
   identifier: string;
   ped: number;
-  #inScope: Dict<true>;
-  #character?: Partial<Character>;
-  #characters?: Partial<Character>[];
+  #characters?: Character[];
+  #inScope: Dict<true> = {};
+  #metadata: Dict<any>;
+  #statuses: Dict<any>;
 
   protected static members: Dict<OxPlayer> = {};
   protected static keys: Dict<Dict<OxPlayer>> = {
@@ -39,20 +49,20 @@ export class OxPlayer extends ClassInterface {
     this.#inScope = {};
   }
 
-  getCharId() {
-    return this.#character?.charId;
+  emit(eventName: string, ...args: any[]) {
+    emitNet(eventName, this.source, ...args);
   }
 
   /** Stores a value in the active character's metadata. */
   set(key: string, value: any, replicated?: boolean) {
-    this.#character.metadata[key] = value;
+    this.#metadata[key] = value;
 
     if (replicated) emitNet('ox:setPlayerData', this.source, key, value);
   }
 
   /** Gets a value stored in active character's metadata. */
   get(key: string) {
-    return this.#character.metadata[key];
+    return this.#metadata[key];
   }
 
   getPlayersInScope() {
@@ -100,8 +110,8 @@ export class OxPlayer extends ClassInterface {
       false,
       GetEntityHealth(this.ped),
       GetPedArmour(this.ped),
-      JSON.stringify(this.#character.statuses || {}),
-      this.#character.charId,
+      JSON.stringify(this.#statuses || {}),
+      this.charId,
     ];
   }
 
@@ -111,21 +121,22 @@ export class OxPlayer extends ClassInterface {
     for (const id in this.members) {
       const player = this.members[id];
 
-      if (player.#character) {
+      if (player.charId) {
         parameters.push(player.#getSaveData());
       }
 
       if (kickWithReason) {
-        player.#character = null;
+        player.charId = null;
         DropPlayer(player.source as string, kickWithReason);
       }
     }
 
+    DEV: console.info(`Saving ${parameters.length} players to the database.`);
     SaveCharacterData(parameters, true);
   }
 
   save() {
-    if (this.#character) return SaveCharacterData(this.#getSaveData());
+    if (this.charId) return SaveCharacterData(this.#getSaveData());
   }
 
   /** Adds a player to the player registry. */
@@ -143,14 +154,14 @@ export class OxPlayer extends ClassInterface {
   }
 
   async logout(dropped: boolean) {
-    if (!this.#character) return;
+    if (!this.charId) return;
 
-    emit('ox:playerLogout', this.source, this.userId, this.#character.charId);
+    emit('ox:playerLogout', this.source, this.userId, this.charId);
     await this.save();
 
     if (dropped) return;
 
-    this.#character = null;
+    this.charId = null;
 
     emitNet('ox:startCharacterSelect', this.source, await this.#getCharacters());
   }
@@ -171,10 +182,10 @@ export class OxPlayer extends ClassInterface {
   async createCharacter(data: NewCharacter) {
     const stateId = await this.#generateStateId();
     const phoneNumber: number = null;
-
-    const character: Partial<Character> = {
+    const character: Character = {
       firstName: data.firstName,
       lastName: data.lastName,
+      stateId: stateId,
       charId: await CreateCharacter(
         this.userId,
         stateId,
@@ -184,7 +195,6 @@ export class OxPlayer extends ClassInterface {
         data.date,
         phoneNumber
       ),
-      stateId: stateId,
     };
 
     this.#characters.push(character);
@@ -200,16 +210,34 @@ export class OxPlayer extends ClassInterface {
   }
 
   async setActiveCharacter(data: number | NewCharacter) {
-    if (this.#character) return;
+    if (this.charId) return;
 
     const character =
       this.#characters[
         typeof data === 'object' ? await this.createCharacter(data) : this.#getCharacterSlotFromId(data)
       ];
 
-    this.#character = character;
     this.#characters = null;
     this.ped = GetPlayerPed(this.source as string);
+
+    const { isDead, gender, dateOfBirth, phoneNumber, health, armour, statuses } = await GetCharacterMetadata(
+      character.charId
+    );
+
+    character.health = isDead ? 0 : health;
+    character.armour = armour;
+
+    this.charId = character.charId;
+    this.stateId = character.stateId;
+    this.#metadata = {};
+    this.#statuses = statuses || {};
+
+    this.set('firstName', character.firstName, true);
+    this.set('lastName', character.lastName, true);
+    this.set('isDead', isDead, true);
+    this.set('gender', gender, true);
+    this.set('dateOfBirth', dateOfBirth, true);
+    this.set('phoneNumber', phoneNumber, true);
 
     // setup groups
     // setup licenses
@@ -217,16 +245,17 @@ export class OxPlayer extends ClassInterface {
     // setup metadata
 
     DEV: console.info(
-      `OxPlayer<${this.userId}> loaded character ${this.#character.firstName} ${this.#character.lastName} (${this.#character.charId})`
+      `OxPlayer<${this.userId}> loaded character ${this.get('firstName')} ${this.get('lastName')} (${this.charId})`
     );
 
+    this.emit('ox:setActiveCharacter', character, this.userId);
     emit('ox:playerLoaded', this.source, this.userId, character.charId);
 
-    return this.#character;
+    return character;
   }
 
   async deleteCharacter(charId: number) {
-    if (this.getCharId()) return;
+    if (this.charId) return;
 
     const slot = this.#getCharacterSlotFromId(charId);
 
@@ -237,7 +266,7 @@ export class OxPlayer extends ClassInterface {
       emit('ox:deletedCharacter', this.source, this.userId, charId);
 
       DEV: console.info(
-        `deleteCharacter ${this.#character.firstName} ${this.#character.lastName} for OxPlayer<${this.userId}>`
+        `deleteCharacter ${this.get('firstName')} ${this.get('lastName')} for OxPlayer<${this.userId}>`
       );
       return true;
     }

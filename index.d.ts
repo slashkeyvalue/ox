@@ -12,11 +12,11 @@ declare interface Character {
   stateId: string;
   firstName: string;
   lastName: string;
-  metadata: Dict<any>;
-  statuses: Dict<number>;
-  licenses: Dict<Dict<any>>;
   x?: number;
   y?: number;
   z?: number;
   heading?: number;
+  lastPlayed?: string;
+  health?: number;
+  armour?: number;
 }

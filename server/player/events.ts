@@ -22,8 +22,7 @@ onNet('ox:setActiveCharacter', async (data: number | NewCharacter) => {
 
   if (!player) return;
 
-  const character = await player.setActiveCharacter(data);
-  emitNet('ox:setActiveCharacter', player.source, character);
+  return await player.setActiveCharacter(data);
 });
 
 onClientCallback('ox:deleteCharacter', async (playerId, charId: number) => {

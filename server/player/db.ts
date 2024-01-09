@@ -48,7 +48,7 @@ export async function CreateCharacter(
 
 export async function GetCharacters(userId: number) {
   using conn = await db.getConnection();
-  const resp = conn.execute<Partial<Character>[]>(
+  const resp = conn.execute<Character[]>(
     'SELECT charId, stateId, firstName, lastName, x, y, z, heading, DATE_FORMAT(lastPlayed, "%d/%m/%Y") AS lastPlayed FROM characters WHERE userId = ? AND deleted IS NULL LIMIT ?',
     [userId, CHARACTER_SLOTS]
   );
@@ -63,7 +63,6 @@ export async function SaveCharacterData(values: any[] | any[][], batch?: boolean
 
   if (batch) await conn.batch(query, values);
   else await conn.execute(query, values);
-
 }
 
 export async function DeleteCharacter(charId: number) {
@@ -71,4 +70,22 @@ export async function DeleteCharacter(charId: number) {
   const resp: OkPacket = await conn.execute('UPDATE characters SET deleted = curdate() WHERE charId = ?', [charId]);
 
   return resp.affectedRows === 1;
+}
+
+export async function GetCharacterMetadata(charId: number) {
+  using conn = await db.getConnection();
+  const resp = await conn.execute(
+    'SELECT isDead, gender, DATE_FORMAT(dateOfBirth, "%d/%m/%Y") AS dateOfBirth, phoneNumber, health, armour, statuses FROM characters WHERE charId = ?',
+    [charId]
+  );
+
+  return db.single(resp) as {
+    isDead: boolean;
+    gender: string;
+    dateOfBirth: string;
+    phoneNumber: string;
+    health: number;
+    armour: number;
+    statuses: object;
+  };
 }
