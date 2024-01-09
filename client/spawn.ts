@@ -70,7 +70,7 @@ async function StartCharacterSelect() {
   SetCamActive(cam, true);
   RenderScriptCams(true, false, 0, true, true);
   PointCamAtCoord(cam, DEFAULT_SPAWN[0], DEFAULT_SPAWN[1], DEFAULT_SPAWN[2] + 0.1);
-  DoScreenFadeIn(300);
+  DoScreenFadeIn(200);
 
   while (IsScreenFadedOut()) await Sleep(0);
 
@@ -84,6 +84,7 @@ async function StartCharacterSelect() {
     await Sleep(0);
   }
 
+  NetworkEndTutorialSession();
   SetPlayerControl(playerId, true, 0);
   SetPlayerInvincible(playerId, false);
   RenderScriptCams(false, false, 0, true, true);
@@ -91,36 +92,29 @@ async function StartCharacterSelect() {
   SetMaxWantedLevel(0);
   NetworkSetFriendlyFireOption(true);
   SetPlayerHealthRechargeMultiplier(playerId, 0.0);
-  SetGameplayCamRelativeHeading(0);
 }
 
 async function SpawnPlayer(x: number, y: number, z: number, heading: number, playerPed: number) {
-  DoScreenFadeOut(200);
-
-  while (!IsScreenFadedOut()) await Sleep(0);
-
-  SwitchOutPlayer(PlayerPedId(), 0, 1);
-  DoScreenFadeIn(300);
-  NetworkEndTutorialSession();
-  RequestCollisionAtCoord(x, y, z);
-  SetEntityCoordsNoOffset(playerPed, x, y, z, false, false, false);
-  SetEntityHeading(playerPed, heading);
-  FreezeEntityPosition(playerPed, true);
+  SwitchOutPlayer(playerPed, 0, 1);
 
   while (GetPlayerSwitchState() !== 5) await Sleep(0);
 
+  SetEntityCoordsNoOffset(playerPed, x, y, z, false, false, false);
+  SetEntityHeading(playerPed, heading);
+  RequestCollisionAtCoord(x, y, z);
+  FreezeEntityPosition(playerPed, true);
+  DoScreenFadeIn(200);
   SwitchInPlayer(playerPed);
+  SetGameplayCamRelativeHeading(0);
 
   while (GetPlayerSwitchState() !== 12) await Sleep(0);
-
-  SetGameplayCamRelativeHeading(0);
 
   while (!HasCollisionLoadedAroundEntity(playerPed)) await Sleep(0);
 
   FreezeEntityPosition(playerPed, false);
 }
 
-function CreateCharacterMenu(characters: Partial<Character>[]) {
+function CreateCharacterMenu(characters: Character[]) {
   //todo: export ContextMenuArrayItem and such from ox_lib
   const options: any[] = new Array(characters.length);
 
@@ -258,7 +252,7 @@ function CreateCharacterMenu(characters: Partial<Character>[]) {
   showContext('ox:characterSelect');
 }
 
-onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
+onNet('ox:startCharacterSelect', async (characters: Character[]) => {
   if (playerIsLoaded) {
     DEV: console.info('Character is already loaded - resetting data');
     playerIsLoaded = false;
@@ -270,18 +264,26 @@ onNet('ox:startCharacterSelect', async (characters: Partial<Character>[]) => {
   CreateCharacterMenu(characters);
 });
 
-onNet('ox:setActiveCharacter', async (data: Partial<Character>) => {
+onNet('ox:setActiveCharacter', async (character: Character, userId: number) => {
   const playerPed = PlayerPedId();
 
-  SetEntityHealth(playerPed, GetEntityMaxHealth(playerPed));
-  SetPedArmour(playerPed, 0);
+  if (character.x) {
+    DoScreenFadeOut(300);
 
-  if (data.x) await SpawnPlayer(data.x, data.y, data.z, data.heading, playerPed);
+    while (!IsScreenFadedOut()) await Sleep(0);
+  }
 
   playerIsLoaded = true;
   playerIsHidden = false;
 
-  DEV: console.info(`Loaded as ${data.firstName} ${data.lastName}`);
+  if (character.x) await SpawnPlayer(character.x, character.y, character.z, character.heading, playerPed);
+
+  SetEntityHealth(playerPed, character.health ?? GetEntityMaxHealth(playerPed));
+  SetPedArmour(playerPed, character.armour ?? 0);
+
+  DEV: console.info(`Loaded as ${character.firstName} ${character.lastName}`);
+  DEV: console.log(character);
+
   TriggerEvent('playerSpawned');
   TriggerEvent('ox:playerLoaded', {} /** todo */);
 
