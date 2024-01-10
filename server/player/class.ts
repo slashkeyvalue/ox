@@ -232,23 +232,33 @@ export class OxPlayer extends ClassInterface {
     this.#metadata = {};
     this.#statuses = statuses || {};
 
+    // setup groups
+    // setup licenses
+    // setup accounts
+
+    this.emit('ox:setActiveCharacter', character, this.userId);
+
+    // Values stored in metadata and synced to client.
     this.set('firstName', character.firstName, true);
     this.set('lastName', character.lastName, true);
-    this.set('isDead', isDead, true);
     this.set('gender', gender, true);
     this.set('dateOfBirth', dateOfBirth, true);
     this.set('phoneNumber', phoneNumber, true);
 
-    // setup groups
-    // setup licenses
-    // setup accounts
-    // setup metadata
+    /**
+     * @todo Player metadata can ideally be handled with statebags, but requires security features.
+     * Rejection of client-set values is a must-have.
+     * "Private" states only visible to the owner would be :chefskiss:
+     * https://github.com/citizenfx/fivem/pull/2257 - state bag filters
+     * https://github.com/citizenfx/fivem/pull/2257 - state bag write policies
+     */
+    const state = Player(this.source).state;
+    state.set('isDead', isDead, true);
 
     DEV: console.info(
       `OxPlayer<${this.userId}> loaded character ${this.get('firstName')} ${this.get('lastName')} (${this.charId})`
     );
 
-    this.emit('ox:setActiveCharacter', character, this.userId);
     emit('ox:playerLoaded', this.source, this.userId, character.charId);
 
     return character;

@@ -1,14 +1,15 @@
 import { CHARACTER_SLOTS, DEFAULT_SPAWN } from 'config';
-import { Sleep } from '../common';
+import { Sleep } from '../../common';
 import {
   alertDialog,
   inputDialog,
   registerContext,
   showContext,
   triggerServerCallback,
+  cache,
 } from '@overextended/ox_lib/client';
-
-const playerId = PlayerId();
+import { isPlayerLoaded, playerData, playerMetadata, setPlayerLoaded } from './';
+import { netEvent } from 'utils';
 
 async function StartSession() {
   NetworkStartSoloTutorialSession();
@@ -24,24 +25,21 @@ async function StartSession() {
     ShutdownLoadingScreen();
   }
 
-  SetPlayerControl(playerId, false, 0);
-  SetPlayerInvincible(playerId, true);
+  SetPlayerControl(cache.playerId, false, 0);
+  SetPlayerInvincible(cache.playerId, true);
 }
 
 setImmediate(StartSession);
 emitNet('ox:playerJoined');
 
-let playerIsLoaded = false;
 let playerIsHidden = true;
 
 async function StartCharacterSelect() {
   await StartSession();
 
-  let playerPed = PlayerPedId();
-
-  SetEntityCoordsNoOffset(playerPed, DEFAULT_SPAWN[0], DEFAULT_SPAWN[1], DEFAULT_SPAWN[2], true, true, false);
+  SetEntityCoordsNoOffset(cache.ped, DEFAULT_SPAWN[0], DEFAULT_SPAWN[1], DEFAULT_SPAWN[2], true, true, false);
   StartPlayerTeleport(
-    playerId,
+    cache.playerId,
     DEFAULT_SPAWN[0],
     DEFAULT_SPAWN[1],
     DEFAULT_SPAWN[2],
@@ -51,9 +49,9 @@ async function StartCharacterSelect() {
     false
   );
 
-  while (!UpdatePlayerTeleport(playerId)) await Sleep(0);
+  while (!UpdatePlayerTeleport(cache.playerId)) await Sleep(0);
 
-  const camOffset = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 4.7, 0.2);
+  const camOffset = GetOffsetFromEntityInWorldCoords(cache.ped, 0.0, 4.7, 0.2);
   const cam = CreateCameraWithParams(
     'DEFAULT_SCRIPTED_CAMERA',
     camOffset[0],
@@ -74,7 +72,7 @@ async function StartCharacterSelect() {
 
   while (IsScreenFadedOut()) await Sleep(0);
 
-  while (!playerIsLoaded) {
+  while (!isPlayerLoaded()) {
     DisableAllControlActions(0);
     ThefeedHideThisFrame();
     HideHudAndRadarThisFrame();
@@ -85,33 +83,33 @@ async function StartCharacterSelect() {
   }
 
   NetworkEndTutorialSession();
-  SetPlayerControl(playerId, true, 0);
-  SetPlayerInvincible(playerId, false);
+  SetPlayerControl(cache.playerId, true, 0);
+  SetPlayerInvincible(cache.playerId, false);
   RenderScriptCams(false, false, 0, true, true);
   DestroyCam(cam, false);
   SetMaxWantedLevel(0);
   NetworkSetFriendlyFireOption(true);
-  SetPlayerHealthRechargeMultiplier(playerId, 0.0);
+  SetPlayerHealthRechargeMultiplier(cache.playerId, 0.0);
 }
 
-async function SpawnPlayer(x: number, y: number, z: number, heading: number, playerPed: number) {
-  SwitchOutPlayer(playerPed, 0, 1);
+async function SpawnPlayer(x: number, y: number, z: number, heading: number) {
+  SwitchOutPlayer(cache.ped, 0, 1);
 
   while (GetPlayerSwitchState() !== 5) await Sleep(0);
 
-  SetEntityCoordsNoOffset(playerPed, x, y, z, false, false, false);
-  SetEntityHeading(playerPed, heading);
+  SetEntityCoordsNoOffset(cache.ped, x, y, z, false, false, false);
+  SetEntityHeading(cache.ped, heading);
   RequestCollisionAtCoord(x, y, z);
-  FreezeEntityPosition(playerPed, true);
+  FreezeEntityPosition(cache.ped, true);
   DoScreenFadeIn(200);
-  SwitchInPlayer(playerPed);
+  SwitchInPlayer(cache.ped);
   SetGameplayCamRelativeHeading(0);
 
   while (GetPlayerSwitchState() !== 12) await Sleep(0);
 
-  while (!HasCollisionLoadedAroundEntity(playerPed)) await Sleep(0);
+  while (!HasCollisionLoadedAroundEntity(cache.ped)) await Sleep(0);
 
-  FreezeEntityPosition(playerPed, false);
+  FreezeEntityPosition(cache.ped, false);
 }
 
 function CreateCharacterMenu(characters: Character[]) {
@@ -252,10 +250,10 @@ function CreateCharacterMenu(characters: Character[]) {
   showContext('ox:characterSelect');
 }
 
-onNet('ox:startCharacterSelect', async (characters: Character[]) => {
-  if (playerIsLoaded) {
+netEvent('ox:startCharacterSelect', async (characters: Character[]) => {
+  if (isPlayerLoaded()) {
     DEV: console.info('Character is already loaded - resetting data');
-    playerIsLoaded = false;
+    setPlayerLoaded(false);
     playerIsHidden = true;
   }
 
@@ -264,28 +262,27 @@ onNet('ox:startCharacterSelect', async (characters: Character[]) => {
   CreateCharacterMenu(characters);
 });
 
-onNet('ox:setActiveCharacter', async (character: Character, userId: number) => {
-  const playerPed = PlayerPedId();
-
+netEvent('ox:setActiveCharacter', async (character: Character, userId: number) => {
   if (character.x) {
     DoScreenFadeOut(300);
 
     while (!IsScreenFadedOut()) await Sleep(0);
   }
 
-  playerIsLoaded = true;
+  setPlayerLoaded(true);
   playerIsHidden = false;
 
-  if (character.x) await SpawnPlayer(character.x, character.y, character.z, character.heading, playerPed);
+  if (character.x) await SpawnPlayer(character.x, character.y, character.z, character.heading);
 
-  SetEntityHealth(playerPed, character.health ?? GetEntityMaxHealth(playerPed));
-  SetPedArmour(playerPed, character.armour ?? 0);
+  SetEntityHealth(cache.ped, character.health ?? GetEntityMaxHealth(cache.ped));
+  SetPedArmour(cache.ped, character.armour ?? 0);
 
   DEV: console.info(`Loaded as ${character.firstName} ${character.lastName}`);
-  DEV: console.log(character);
+  DEV: console.log(playerData);
+  DEV: console.log(playerMetadata);
 
   TriggerEvent('playerSpawned');
-  TriggerEvent('ox:playerLoaded', {} /** todo */);
+  TriggerEvent('ox:playerLoaded', playerData);
 
   // run status system
   // run death system
